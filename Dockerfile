@@ -29,6 +29,10 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # 复制自定义nginx配置
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# 创建必要的临时目录并设置权限
+RUN mkdir -p /tmp/nginx_client_temp /tmp/nginx_proxy_temp /tmp/nginx_fastcgi_temp /tmp/nginx_uwsgi_temp /tmp/nginx_scgi_temp && \
+    chmod 755 /tmp/nginx_*_temp
+
 # 暴露80端口
 EXPOSE 80
 
