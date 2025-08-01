@@ -4,7 +4,7 @@
         <el-container>
             <el-header>
                 <el-row class="header" text-align="middle" justify="space-between" type="flex">
-                    <el-col class="site-name" :span="8">
+                    <el-col class="site-name" :span="8" >
                         <a href="/">Roommate Matcher</a>
                     </el-col>
                     <el-col class="site-name" :span="4"></el-col>

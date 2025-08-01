@@ -1,40 +1,43 @@
 <template>
     <div class="profile-card-container">
         <div @click="jump(student)" class="profile-card">
-            <el-row type="flex" justify="center">
+            <!-- 头像区域 -->
+            <div class="avatar-section">
                 <el-avatar class="avatar" :src="avatar(student)"></el-avatar>
                 <span v-if="student.team_students_num !== undefined" :class="['team-flag', teamFlagColor(student.team_students_num)]">
                     <template v-if="student.team_students_num === 0">未组队</template>
                     <template v-else-if="student.team_students_num == 4">满员</template>
                     <template v-else>{{ student.team_students_num }}/4</template>
                 </span>
-            </el-row>
-            <el-row type="flex" justify="center">
+            </div>
+            
+            <!-- 内容区域 -->
+            <div class="content-section">
                 <div class="text">
                     <div class="name" v-if="student.province !== null"> 
                         <div class="province">来自{{ student.province }}的</div> 
                         {{ student.name }} 
-                        <label v-if="isNT(student.mbti)" class= "mbti-label-NT">{{student.mbti}}</label>
-                        <label v-if="isNF(student.mbti)"" class= "mbti-label-NF">{{student.mbti}}</label>
-                        <label v-if="isSJ(student.mbti)" class= "mbti-label-SJ">{{student.mbti}}</label>
-                        <label v-if="isSP(student.mbti)" class= "mbti-label-SP">{{student.mbti}}</label>
+                        <label v-if="isNT(student.mbti)" class="mbti-label-NT">{{student.mbti}}</label>
+                        <label v-if="isNF(student.mbti)" class="mbti-label-NF">{{student.mbti}}</label>
+                        <label v-if="isSJ(student.mbti)" class="mbti-label-SJ">{{student.mbti}}</label>
+                        <label v-if="isSP(student.mbti)" class="mbti-label-SP">{{student.mbti}}</label>
                     </div>
                     <div class="name" v-else> {{ student.name }} 
-                        <label v-if="isNT(student.mbti)" class= "mbti-label-NT">{{student.mbti}}</label>
-                        <label v-if="isNF(student.mbti)"" class= "mbti-label-NF">{{student.mbti}}</label>
-                        <label v-if="isSJ(student.mbti)" class= "mbti-label-SJ">{{student.mbti}}</label>
-                        <label v-if="isSP(student.mbti)" class= "mbti-label-SP">{{student.mbti}}</label>
+                        <label v-if="isNT(student.mbti)" class="mbti-label-NT">{{student.mbti}}</label>
+                        <label v-if="isNF(student.mbti)" class="mbti-label-NF">{{student.mbti}}</label>
+                        <label v-if="isSJ(student.mbti)" class="mbti-label-SJ">{{student.mbti}}</label>
+                        <label v-if="isSP(student.mbti)" class="mbti-label-SP">{{student.mbti}}</label>
                     </div>
                     <span class="score">匹配指数： <strong>{{ student.score | numRounding }}</strong></span>
                     <div>
-                        <span v-for="(trait, traitIndex) in getTraits(student.contact)" :key= "traitIndex" class="label">{{trait}}</span>
+                        <span v-for="(trait, traitIndex) in getTraits(student.contact)" :key="traitIndex" class="label">{{trait}}</span>
                     </div>
                     <div class="contact">
                         <div><strong>QQ: </strong>{{ student.qq }}</div>
                         <div><strong>Wechat: </strong>{{student.wechat }}</div>
                     </div>
                 </div>
-            </el-row>
+            </div>
         </div>
     </div>
 </template>
@@ -103,25 +106,46 @@ export default {
 .profile-card-container {
     padding: 0px 20px;
     margin: 20px 0;
-    container-type: inline-size;
+    container-type: inline-size; /* 启用容器查询 */
 
     .profile-card {
         border: #e6e6e6 solid 2px;
         border-radius: 12px;
         min-height: 170px;
         cursor: pointer;
+        position: relative;
+        
+        /* 默认垂直布局（组件宽度 < 300px） */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+
+        .avatar-section {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .content-section {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
 
         .avatar {
             width: 100px;
             height: 100px;
-            margin: 20px 0 0 0;
-            display: inline-block;
+            display: block;
         }
 
         .team-flag {
             position: absolute;
-            top: 0px;
-            right: 0px;
+            top: -10px;
+            right: -10px;
             z-index: 20;
             padding: 2px 12px 2px 12px;
             border-radius: 0 10px 0 12px;
@@ -142,10 +166,9 @@ export default {
         }
 
         .text {
-            display: inline-block;
             line-height: 1.5;
             overflow: hidden;
-            margin: 30px 40px;
+            text-align: center;
             font-family: 'Belanosima', sans-serif;
             font-family: 'Noto Serif SC', serif;
 
@@ -236,29 +259,164 @@ export default {
     .profile-card.no-score .text {
         top: 40px;
     }
-
 }
 
-// // 移动端适配
-// @media (max-width: 768px) {
-//   .info-flex {
-//     flex-direction: column;
-//     align-items: center;
-//     width: 100%;
-//   }
-//   .avatar {
-//     width: 70px !important;
-//     height: 70px !important;
-//     margin: 0 0 10px 0;
-//     display: block;
-//   }
-//   .basic-info {
-//     width: 100%;
-//     margin-left: 0;
-//     font-size: 14px;
-//     text-align: center;
-//     word-break: break-all;
-//   }
-// }
+/* 容器查询：当组件宽度 >= 300px 时，使用水平布局 */
+@container (min-width: 300px) {
+    .profile-card-container {
+        .profile-card {
+            /* 水平布局：头像在左，内容在右 */
+            flex-direction: row;
+            align-items: flex-start;
+            padding: 20px;
+            gap: 20px;
+
+            .avatar-section {
+                flex-shrink: 0;
+                margin-bottom: 0;
+                margin-right: 20px;
+                display: flex;
+                align-items: center;
+            }
+
+            .content-section {
+                flex: 1;
+                justify-content: flex-start;
+                display: flex;
+                align-items: center;
+                margin-top: 20px;
+                margin-left: -30px;
+            }
+
+            .text {
+                text-align: left;
+                margin: 0;
+            }
+
+            .avatar {
+                width: 100px !important;
+                height: 100px !important;
+            }
+
+            .team-flag {
+                top: -5px;
+                right: -5px;
+            }
+        }
+    }
+}
+
+/* 容器查询：当组件宽度 >= 400px 时，进一步优化布局 */
+@container (min-width: 400px) {
+    .profile-card-container {
+        .profile-card {
+            .avatar {
+                width: 135px;
+                height: 135px;
+            }
+
+            .text {
+                .name {
+                    font-size: 18px;
+                }
+
+                .score {
+                    font-size: 13px;
+                }
+            }
+        }
+    }
+}
+
+/* 容器查询：当组件宽度 >= 500px 时，使用更大的头像 */
+@container (min-width: 500px) {
+    .profile-card-container {
+        .profile-card {
+            .avatar {
+                width: 150px;
+                height: 150px;
+            }
+
+            .text {
+                .name {
+                    font-size: 20px;
+                }
+
+                .score {
+                    font-size: 14px;
+                }
+            }
+        }
+    }
+}
+
+/* 移动端适配 - 使用传统媒体查询作为后备方案 */
+@media (max-width: 768px) {
+    .profile-card-container {
+        padding: 0px 10px;
+        margin: 10px 0;
+        
+        .profile-card {
+            min-height: 150px;
+            padding: 15px;
+            
+            .avatar {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .text {
+                .name {
+                    font-size: 16px;
+                }
+                
+                .score {
+                    font-size: 12px;
+                }
+                
+                .contact {
+                    font-size: 9px;
+                }
+                
+                .label {
+                    font-size: 7px;
+                    padding: 1px 3px;
+                }
+            }
+        }
+    }
+}
+
+/* 小屏幕适配 */
+@media (max-width: 480px) {
+    .profile-card-container {
+        padding: 0px 5px;
+        
+        .profile-card {
+            min-height: 140px;
+            padding: 10px;
+            
+            .avatar {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .text {
+                .name {
+                    font-size: 14px;
+                }
+                
+                .score {
+                    font-size: 11px;
+                }
+                
+                .contact {
+                    font-size: 8px;
+                }
+            }
+        }
+    }
+}
+
 
 </style>

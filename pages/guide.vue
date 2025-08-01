@@ -1,7 +1,12 @@
 <template>
     <div class="guide">
-        <PageHeader title="向导 | Guide"></PageHeader>
         <el-row type="flex" justify="center">
+            <el-col :span="21">
+                <PageHeader title="向导 | Guide"></PageHeader>
+            </el-col>
+        </el-row>
+        <el-row type="flex" justify="center">
+             
             <el-col :span="20">
                 <div class="default-container">
                     <el-steps :active="active_index()" align-center finish-status="success" :direction="stepsDirection">

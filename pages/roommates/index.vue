@@ -4,7 +4,7 @@
         
         <!-- 控制面板 -->
         <el-row type="flex" justify="center" class="control-panel">
-            <el-col :span="20">
+            <el-col :span="24">
                 <div class="default-container">
                     <el-row type="flex" justify="space-between" align="middle">
                         <el-col :span="12">
@@ -12,15 +12,17 @@
                                 v-model="onlyShowUnteamed"
                                 active-text="仅显示未组队/未满员同学"
                                 inactive-text="显示所有推荐"
+                                style="min-width: 230px;"
                             />
                         </el-col>
                         <el-col :span="8" style="text-align: right;">
                             <span style="margin-right: 10px;">每页显示:</span>
                             <el-select v-model="pageSize" size="small" style="width: 80px;">
                                 <el-option label="8" :value="8"></el-option>
-                                <el-option label="12" :value="12"></el-option>
                                 <el-option label="16" :value="16"></el-option>
-                                <el-option label="20" :value="20"></el-option>
+                                <el-option label="50" :value="50"></el-option>
+                                <el-option label="100" :value="100"></el-option>
+                                <el-option label="200" :value="200"></el-option>
                             </el-select>
                         </el-col>
                     </el-row>
@@ -30,7 +32,7 @@
         
         <!-- 有评分的学生 -->
         <el-row type="flex" justify="center" v-if="paginatedStudentsWithScore.length > 0">
-            <el-col :span="20">
+            <el-col :span="30">
                 <div class="default-container">
                     <h3 class="section-title">推荐匹配 ({{ filtered_student_with_score.length }}人)</h3>
                     <div class="students-grid">
@@ -47,8 +49,8 @@
         </el-row>
         
         <!-- 无评分的学生 -->
-        <el-row type="flex" justify="center" v-if="paginatedStudentsWithNoScore.length > 0">
-            <el-col :span="20">
+        <el-row type="flex" justify="center" v-if="paginatedStudentsWithNoScore.length > 0" style="position: relative; top: -50px;">
+            <el-col :span="24">
                 <div class="default-container">
                     <h3 class="section-title">其他同学 ({{ filtered_student_with_no_score.length }}人)</h3>
                     <div class="students-grid">
@@ -66,7 +68,7 @@
         
         <!-- 分页组件 -->
         <el-row type="flex" justify="center" v-if="totalPages > 1">
-            <el-col :span="20">
+            <el-col :span="24">
                 <div class="default-container">
                     <div class="pagination-container">
                         <el-pagination
@@ -95,7 +97,7 @@ export default {
             student_with_no_score: [],
             onlyShowUnteamed: false,
             currentPage: 1,
-            pageSize: 12
+            pageSize: 16
         }
     },
     computed: {
@@ -217,7 +219,7 @@ export default {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
-    container-type: inline-size;
+    /* 移除 container-type，iOS Safari 兼容性差 */
 }
 
 .student-card-wrapper {
@@ -232,7 +234,8 @@ export default {
     border-top: 1px solid #EBEEF5;
 }
 
-@container (max-width: 600px) {
+/* 移动端适配 - 使用传统媒体查询替代 container queries */
+@media (max-width: 600px) {
     .default-container {
         padding: 8px !important;
     }
@@ -247,21 +250,43 @@ export default {
     }
 }
 
-@container (min-width: 601px) and (max-width: 900px) {
+@media (min-width: 601px) and (max-width: 900px) {
     .students-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@container (min-width: 901px) and (max-width: 1200px) {
+@media (min-width: 901px) and (max-width: 1200px) {
     .students-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
-@container (min-width: 1201px) {
+@media (min-width: 1201px) {
     .students-grid {
         grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* iOS Safari 兼容性修复 */
+@supports (-webkit-touch-callout: none) {
+    .students-grid {
+        /* 强制硬件加速，防止 iOS Safari 渲染问题 */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+    
+    .student-card-wrapper {
+        /* 防止 iOS Safari 中的子元素渲染问题 */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+    
+    .default-container {
+        /* 优化 iOS Safari 滚动体验 */
+        -webkit-overflow-scrolling: touch;
     }
 }
 </style>
