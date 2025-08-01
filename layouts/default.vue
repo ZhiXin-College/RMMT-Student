@@ -72,7 +72,8 @@
             <el-footer>
                 <el-row>
                     <el-col class="copyright" :span="6">
-                        Designed by Xuanyu Liu <br/>
+                        Designed by Xuanyu Liu (2021) <br/>
+                        Improved by Yicheng Xiao (2022) & Huitian Wang (2024)
                         Made With <span style="color: #e27575;font-size: 14px;">❤</span>
                     </el-col>
                     <el-col class="logo" :span="6" :offset="12">
