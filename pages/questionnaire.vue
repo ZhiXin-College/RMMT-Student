@@ -2,7 +2,7 @@
     <div class="questionnaire">
         
         <el-row type="flex" justify="center">
-            <el-col :span="21">
+            <el-col :span="20" :xs="24" :sm="22" :md="20" :lg="18" :xl="16">
                 <PageHeader title="问卷调查 | Questionnaire"></PageHeader>
             </el-col>
         </el-row>
