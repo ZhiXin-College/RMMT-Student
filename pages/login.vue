@@ -6,10 +6,10 @@
                 RMMT Student
             </div>
             <el-form ref="login_form" :model="login_form" :rules="rules" label-position="top" class="login-form">
-                <el-form-item label="学号 / Student ID" prop="id" class="form-item">
+                <el-form-item label="账号 / Account" prop="id" class="form-item">
                     <el-input 
                         v-model.number="login_form.id" 
-                        placeholder="请输入学号"
+                        placeholder="请输入手机号"
                         size="large"
                         prefix-icon="el-icon-user"
                     ></el-input>
@@ -56,7 +56,7 @@ export default {
                 id: {
                     type: 'number',
                     required: true,
-                    message: '请输入学号',
+                    message: '请输入手机号',
                     trigger: 'blur'
                 },
                 password: {
