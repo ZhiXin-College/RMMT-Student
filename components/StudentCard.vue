@@ -1,17 +1,25 @@
 <template>
     <div class="profile-card-container">
+      
         <div @click="jump(student)" class="profile-card">
-            <!-- 头像区域 -->
-            <div class="avatar-section">
-                <el-avatar class="avatar" :src="avatar(student)"></el-avatar>
-                <span v-if="student.team_students_num !== undefined" :class="['team-flag', teamFlagColor(student.team_students_num)]">
+           
+            <div class="team-status-container"> 
+                <span 
+                    v-if="student.team_students_num !== undefined" 
+                    :class="['team-flag', teamFlagColor(student.team_students_num)]"
+                >
                     <template v-if="student.team_students_num === 0">未组队</template>
                     <template v-else-if="student.team_students_num == 4">满员</template>
                     <template v-else>{{ student.team_students_num }}/4</template>
                 </span>
             </div>
-            
-            <!-- 内容区域 -->
+
+         
+            <div class="avatar-section">
+                <el-avatar class="avatar" :src="avatar(student)"></el-avatar>
+            </div>
+
+         
             <div class="content-section">
                 <div class="text">
                     <div class="name" v-if="student.province !== null"> 
@@ -41,6 +49,14 @@
         </div>
     </div>
 </template>
+
+<style>
+/* 关键样式：让卡片容器成为相对定位容器 */
+.profile-card {
+    position: relative; /* 新增：作为绝对定位的参考系 */
+}
+</style>
+
 
 <script>
 import md5 from "md5";
@@ -121,6 +137,15 @@ export default {
         align-items: center;
         padding: 20px;
 
+        .team-status-container {
+    position: absolute; /* 绝对定位，脱离文档流 */
+    top: 10px ;
+    right: 10px; 
+    z-index: 10; /* 确保在其他内容上方显示 */
+    padding: 4px 8px;
+    width: auto;
+    white-space: nowrap
+}
         .avatar-section {
             position: relative;
             display: flex;
@@ -278,7 +303,16 @@ export default {
                 display: flex;
                 align-items: center;
             }
-
+/* 右上角团队状态模块的样式 */
+.team-status-container {
+    position: absolute; /* 绝对定位，脱离文档流 */
+    top: 5px; 
+    right: 5px ; 
+    z-index: 10; /* 确保在其他内容上方显示 */
+    padding: 4px 8px;
+    width: auto;
+    white-space: nowrap
+}
             .content-section {
                 flex: 1;
                 justify-content: flex-start;
@@ -314,7 +348,7 @@ export default {
                 width: 135px;
                 height: 135px;
             }
-
+           
             .text {
                 .name {
                     font-size: 18px;
@@ -337,6 +371,7 @@ export default {
                 height: 150px;
             }
 
+     
             .text {
                 .name {
                     font-size: 20px;
