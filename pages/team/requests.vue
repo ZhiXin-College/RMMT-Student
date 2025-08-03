@@ -1,6 +1,11 @@
 <template>
     <div class="requests">
-        <PageHeader title="组队请求 | Team Requests"></PageHeader>
+        
+        <el-row type="flex" justify="center">
+            <el-col :span="21">
+                <PageHeader title="组队请求 | Team Requests"></PageHeader>
+            </el-col>
+        </el-row>
         <el-row type="flex" justify="center">
             <el-col :span="20">
                 <div class="default-container">

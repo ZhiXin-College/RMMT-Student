@@ -32,7 +32,7 @@
         
         <!-- 有评分的学生 -->
         <el-row type="flex" justify="center" v-if="paginatedStudentsWithScore.length > 0">
-            <el-col :span="30">
+            <el-col :span="24">
                 <div class="default-container">
                     <h3 class="section-title">推荐匹配 ({{ filtered_student_with_score.length }}人)</h3>
                     <div class="students-grid">
