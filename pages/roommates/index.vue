@@ -228,7 +228,7 @@ export default {
 .students-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+    gap: 10px;
     /* 移除 container-type，iOS Safari 兼容性差 */
 }
 
