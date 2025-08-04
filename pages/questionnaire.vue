@@ -2,12 +2,12 @@
     <div class="questionnaire">
         
         <el-row type="flex" justify="center">
-            <el-col :span="20" :xs="24" :sm="22" :md="20" :lg="18" :xl="16">
+            <el-col :span="21">
                 <PageHeader title="问卷调查 | Questionnaire"></PageHeader>
             </el-col>
         </el-row>
         <el-row type="flex" justify="center">
-            <el-col :span="20" :xs="24" :sm="22" :md="20" :lg="18" :xl="16">
+            <el-col :span="20">
                 <div class="default-container ">
                     <v-form-render :form-json="formJson" :form-data="formData" ref="vFormRef">
                     </v-form-render>

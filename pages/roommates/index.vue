@@ -1,10 +1,13 @@
 <template>
     <div class="roommates">
-        <PageHeader title="舍友大厅 | Matching Hall"></PageHeader>
-        
+        <el-row type="flex" justify="center">
+            <el-col :span="21">
+                <PageHeader title="舍友大厅 | Matching Hall"></PageHeader>
+            </el-col>
+        </el-row>
         <!-- 控制面板 -->
         <el-row type="flex" justify="center" class="control-panel">
-            <el-col :span="24">
+            <el-col :span="20">
                 <div class="default-container">
                     <el-row type="flex" justify="space-between" align="middle">
                         <el-col :span="12">
@@ -32,7 +35,7 @@
         
         <!-- 有评分的学生 -->
         <el-row type="flex" justify="center" v-if="paginatedStudentsWithScore.length > 0">
-            <el-col :span="24">
+            <el-col :span="20">
                 <div class="default-container">
                     <h3 class="section-title">推荐匹配 ({{ filtered_student_with_score.length }}人)</h3>
                     <div class="students-grid">
@@ -41,7 +44,7 @@
                             :key="student.id"
                             class="student-card-wrapper"
                         >
-                            <StudentCard :student="student" />
+                            <StudentCard :student="student" :team_max_student_count="team_max_student_count" />
                         </div>
                     </div>
                 </div>
@@ -50,7 +53,7 @@
         
         <!-- 无评分的学生 -->
         <el-row type="flex" justify="center" v-if="paginatedStudentsWithNoScore.length > 0" style="position: relative; top: -50px;">
-            <el-col :span="24">
+            <el-col :span="20">
                 <div class="default-container">
                     <h3 class="section-title">其他同学 ({{ filtered_student_with_no_score.length }}人)</h3>
                     <div class="students-grid">
@@ -59,7 +62,7 @@
                             :key="student.id"
                             class="student-card-wrapper"
                         >
-                            <StudentCard :student="student" />
+                            <StudentCard :student="student" :team_max_student_count="team_max_student_count" />
                         </div>
                     </div>
                 </div>
@@ -68,7 +71,7 @@
         
         <!-- 分页组件 -->
         <el-row type="flex" justify="center" v-if="totalPages > 1">
-            <el-col :span="24">
+            <el-col :span="20">
                 <div class="default-container">
                     <div class="pagination-container">
                         <el-pagination
@@ -97,7 +100,8 @@ export default {
             student_with_no_score: [],
             onlyShowUnteamed: false,
             currentPage: 1,
-            pageSize: 16
+            pageSize: 16,
+            team_max_student_count: 4
         }
     },
     computed: {
@@ -180,7 +184,14 @@ export default {
             }
         })
 
-        return data
+        let team_max_student_count = await $axios.$get("/system_setting").then(data => {
+            if (data.code === 200) {
+                const setting = data.data.team_max_student_count
+                return setting ? parseInt(setting) || 4 : 4
+            }
+        })
+
+        return _.assign(data, {team_max_student_count})
     },
     filters: {
         numRounding(num) {
@@ -203,7 +214,6 @@ export default {
 }
 
 .default-container {
-    max-width: 100%;
     padding: 20px;
 }
 

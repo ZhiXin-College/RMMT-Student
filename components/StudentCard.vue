@@ -9,8 +9,8 @@
                     :class="['team-flag', teamFlagColor(student.team_students_num)]"
                 >
                     <template v-if="student.team_students_num === 0">未组队</template>
-                    <template v-else-if="student.team_students_num == 4">满员</template>
-                    <template v-else>{{ student.team_students_num }}/4</template>
+                    <template v-else-if="student.team_students_num == team_max_student_count">满员</template>
+                    <template v-else>{{ student.team_students_num }}/{{ team_max_student_count }}</template>
                 </span>
             </div>
 
@@ -66,6 +66,10 @@ export default {
     props: {
         student: {
             type: Object,
+            required: true
+        },
+        team_max_student_count: {
+            type: Number,
             required: true
         }
     },
