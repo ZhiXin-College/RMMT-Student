@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    /* Orange primary (orange-500) */
+    --primary: 24 95% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 60% 96%;
+    --secondary-foreground: 24 95% 30%;
+    --muted: 30 40% 96%;
+    --muted-foreground: 24 10% 45%;
+    --accent: 24 90% 95%;
+    --accent-foreground: 24 95% 30%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 24 20% 90%;
+    --input: 24 20% 90%;
+    --ring: 24 95% 53%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: system-ui, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+}

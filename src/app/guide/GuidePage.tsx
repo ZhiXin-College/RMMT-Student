@@ -1,0 +1,188 @@
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '@/hooks/useAuth'
+import { useSystemSettings } from '@/hooks/useSystemSettings'
+import { api, getData } from '@/lib/api'
+import type { Announcement } from '@/types/api'
+import { PageHeader } from '@/components/PageHeader'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PROVINCES, MBTI_TYPES } from '@/lib/provinces'
+import ReactMarkdown from 'react-markdown'
+
+export function GuidePage() {
+  const { user, refreshUser } = useAuth()
+  const { settings, loading: settingsLoading } = useSystemSettings()
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true)
+  const [qq, setQq] = useState(user?.qq ?? '')
+  const [wechat, setWechat] = useState(user?.wechat ?? '')
+  const [province, setProvince] = useState(user?.province ?? '')
+  const [mbti, setMbti] = useState(user?.mbti ?? '')
+  const [contact, setContact] = useState(user?.contact ?? '')
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileError, setProfileError] = useState('')
+
+  const loadAnnouncements = useCallback(async () => {
+    try {
+      const res = await api.get('/announcement/list')
+      setAnnouncements(getData<Announcement[]>(res))
+    } catch {
+      setAnnouncements([])
+    } finally {
+      setAnnouncementsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadAnnouncements()
+  }, [loadAnnouncements])
+
+  useEffect(() => {
+    if (user) {
+      setQq(user.qq ?? '')
+      setWechat(user.wechat ?? '')
+      setProvince(user.province ?? '')
+      setMbti(user.mbti ?? '')
+      setContact(user.contact ?? '')
+    }
+  }, [user?.id, user?.qq, user?.wechat, user?.province, user?.mbti, user?.contact])
+
+  const handleSaveProfile = async () => {
+    if (!qq?.trim() && !wechat?.trim()) {
+      setProfileError('QQ和Wechat不能同时为空')
+      return
+    }
+    setProfileError('')
+    setProfileLoading(true)
+    try {
+      getData(await api.post('/update_contact', { qq, wechat, province, mbti, contact }))
+      await refreshUser()
+    } catch (e) {
+      setProfileError(e instanceof Error ? e.message : '更新失败')
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
+  const loading = settingsLoading
+  if (loading) return <div className="py-8 text-center text-muted-foreground">加载中...</div>
+
+  return (
+    <>
+      <PageHeader title="公告与个人资料" />
+
+      {/* 公告列表 */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="text-lg font-medium">公告</div>
+        </CardHeader>
+        <CardContent>
+          {announcementsLoading ? (
+            <p className="text-sm text-muted-foreground">加载中...</p>
+          ) : announcements.length === 0 ? (
+            <p className="text-sm text-muted-foreground">暂无公告</p>
+          ) : (
+            <ul className="space-y-4">
+              {announcements.map((a) => (
+                <li key={a.id} className="rounded-lg border p-4">
+                  <div className="text-sm font-medium text-muted-foreground">{a.created_at}</div>
+                  <div className="mt-1 text-base font-semibold">{a.title}</div>
+                  {a.content && (
+                    <div className="prose prose-sm mt-2 max-w-none dark:prose-invert">
+                      <ReactMarkdown>{a.content}</ReactMarkdown>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 系统说明 / tips */}
+      {settings?.tips && (
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="text-lg font-medium">注意事项</div>
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            {typeof settings.tips === 'string' ? (
+              <ReactMarkdown>{settings.tips}</ReactMarkdown>
+            ) : (
+              <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(settings.tips)}</pre>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 个人信息展示与编辑 */}
+      <Card>
+        <CardHeader>
+          <div className="text-lg font-medium">我的信息</div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2 text-sm">
+            <div><span className="text-muted-foreground">QQ：</span>{user?.qq ?? '—'}</div>
+            <div><span className="text-muted-foreground">Wechat：</span>{user?.wechat ?? '—'}</div>
+            <div><span className="text-muted-foreground">来自：</span>{user?.province ?? '—'}</div>
+            <div><span className="text-muted-foreground">MBTI：</span>{user?.mbti ?? '—'}</div>
+            <div><span className="text-muted-foreground">自我描述：</span>{user?.contact ?? '—'}</div>
+          </div>
+          <div className="border-t pt-4">
+            <div className="mb-3 text-sm font-medium">编辑个人信息</div>
+            <div className="grid gap-3">
+              <div className="grid gap-1.5">
+                <Label>QQ</Label>
+                <Input value={qq} onChange={(e) => setQq(e.target.value)} placeholder="QQ" />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>Wechat</Label>
+                <Input value={wechat} onChange={(e) => setWechat(e.target.value)} placeholder="Wechat" />
+              </div>
+              <div className="grid gap-1.5">
+                <Label>你来自哪里</Label>
+                <Select value={province || '_none'} onValueChange={(v) => setProvince(v === '_none' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="请选择省份" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">请选择</SelectItem>
+                    {PROVINCES.map((p) => (
+                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label>MBTI</Label>
+                <Select value={mbti?.trim() && MBTI_TYPES.includes(mbti.trim().toUpperCase()) ? mbti.trim().toUpperCase() : '_none'} onValueChange={(v) => setMbti(v === '_none' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="请选择 MBTI 类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">请选择</SelectItem>
+                    {MBTI_TYPES.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label>用几个词语描述自己（英文分号分隔）</Label>
+                <Textarea value={contact} onChange={(e) => setContact(e.target.value)} placeholder="用几个词语描述一下自己" rows={2} />
+              </div>
+              {profileError && <p className="text-sm text-destructive">{profileError}</p>}
+              <Button onClick={handleSaveProfile} disabled={profileLoading}>
+                {profileLoading ? '保存中...' : '保存'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  )
+}
