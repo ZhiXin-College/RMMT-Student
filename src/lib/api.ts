@@ -2,9 +2,15 @@ import axios, { type AxiosError } from 'axios'
 import { getToken, setToken } from './auth'
 import type { ApiResponse } from '@/types/api'
 
-const baseURL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api/student`
-  : '/api/student'
+/** 非空才直连后端；留空则用相对路径 /api，由 Vite 代理，避免端口写错或局域网打开前端时的跨域问题 */
+function apiRootFromEnv(): string | undefined {
+  const v = import.meta.env.VITE_API_URL
+  if (v == null || String(v).trim() === '') return undefined
+  return String(v).replace(/\/$/, '')
+}
+
+const root = apiRootFromEnv()
+const baseURL = root ? `${root}/api/student` : '/api/student'
 
 export const api = axios.create({
   baseURL,

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
+import { parseContactWords } from '@/lib/contactDisplay'
 import { cn } from '@/lib/utils'
 
 const MBTI_GROUPS: Record<string, string> = {
@@ -22,20 +23,6 @@ function getMbtiClass(mbti?: string | null): string {
   return ''
 }
 
-function getTraits(contact?: string | null): string[] {
-  if (!contact || contact.length < 15) return []
-  return contact.split(/[,，;；]/).map((t) => t.trim()).filter(Boolean)
-}
-
-function simpleHash(s: string): string {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-  return Math.abs(h).toString(16)
-}
-
 function resolveAssetUrl(url?: string | null): string {
   if (!url) return ''
   if (/^https?:\/\//i.test(url)) return url
@@ -44,14 +31,8 @@ function resolveAssetUrl(url?: string | null): string {
   return `${base}/${url}`
 }
 
-function getAvatarUrl(student: { avatar_url?: string | null; qq?: string | null; id: number }): string {
-  const custom = resolveAssetUrl(student.avatar_url)
-  if (custom) return custom
-  if (student.qq && student.qq.length > 0) {
-    return `https://q.qlogo.cn/headimg_dl?dst_uin=${student.qq}&spec=640`
-  }
-  const email = `${new Date().getFullYear()}rmmp.${student.id}@chacuo.net`
-  return `https://gravatar.loli.net/avatar/${simpleHash(email)}?d=retro`
+function getAvatarUrl(student: { avatar_url?: string | null }): string {
+  return resolveAssetUrl(student.avatar_url)
 }
 
 function teamFlagColor(num: number, max: number): string {
@@ -90,7 +71,8 @@ export interface StudentCardProps {
 
 export function StudentCard({ student, teamMaxStudentCount }: StudentCardProps) {
   const teamNum = student.team_students_num ?? 0
-  const traits = getTraits(student.contact)
+  const traits = parseContactWords(student.contact)
+  const avatarSrc = getAvatarUrl(student)
 
   return (
     <Link to={`/roommates/${student.id}`} className="block">
@@ -103,11 +85,18 @@ export function StudentCard({ student, teamMaxStudentCount }: StudentCardProps) 
             匹配分数 {numRounding(student.score)}
           </div>
           <div className="flex gap-3 pt-6">
-            <img
-              src={getAvatarUrl(student)}
-              alt=""
-              className="h-16 w-16 shrink-0 rounded-full object-cover sm:h-20 sm:w-20"
-            />
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="h-16 w-16 shrink-0 rounded-full object-cover sm:h-20 sm:w-20"
+              />
+            ) : (
+              <div
+                className="h-16 w-16 shrink-0 rounded-full bg-muted sm:h-20 sm:w-20"
+                aria-hidden
+              />
+            )}
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-foreground truncate">{student.name}</div>
               {student.province && (
@@ -122,8 +111,8 @@ export function StudentCard({ student, teamMaxStudentCount }: StudentCardProps) 
           </div>
           {traits.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {traits.map((t) => (
-                <span key={t} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
+              {traits.map((t, i) => (
+                <span key={`${i}-${t}`} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
                   {t}
                 </span>
               ))}

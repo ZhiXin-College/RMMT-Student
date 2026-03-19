@@ -7,9 +7,14 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { PROVINCES, MBTI_TYPES } from '@/lib/provinces'
+import { PROVINCES, MBTI_TYPES, MBTI_OPTIONS } from '@/lib/provinces'
+import {
+  CONTACT_WORD_MAX_CHARS,
+  formatContactForCard,
+  joinThreeContact,
+  parseContactToThree,
+} from '@/lib/contactDisplay'
 import ReactMarkdown from 'react-markdown'
 
 function resolveAssetUrl(url?: string) {
@@ -20,28 +25,12 @@ function resolveAssetUrl(url?: string) {
   return `${base}/${url}`
 }
 
-function simpleHash(s: string): string {
-  let h = 0
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-  return Math.abs(h).toString(16)
-}
-
-function getDisplayAvatar(user: {
-  id?: number
-  qq?: string
-  avatar_url?: string
-} | null): string {
-  const custom = resolveAssetUrl(user?.avatar_url)
-  if (custom) return custom
-  if (user?.qq && user.qq.length > 0) {
-    return `https://q.qlogo.cn/headimg_dl?dst_uin=${user.qq}&spec=640`
-  }
-  const id = user?.id ?? 0
-  const email = `${new Date().getFullYear()}rmmp.${id}@chacuo.net`
-  return `https://gravatar.loli.net/avatar/${simpleHash(email)}?d=retro`
+function mbtiSelectValue(mbti: string): string {
+  const t = mbti.trim()
+  if (!t) return '_none'
+  if (t === '未知') return '未知'
+  const u = t.toUpperCase()
+  return MBTI_TYPES.includes(u) ? u : '_none'
 }
 
 export function GuidePage() {
@@ -53,10 +42,11 @@ export function GuidePage() {
   const [wechat, setWechat] = useState(user?.wechat ?? '')
   const [province, setProvince] = useState(user?.province ?? '')
   const [mbti, setMbti] = useState(user?.mbti ?? '')
-  const [contact, setContact] = useState(user?.contact ?? '')
+  const [desc1, setDesc1] = useState('')
+  const [desc2, setDesc2] = useState('')
+  const [desc3, setDesc3] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
-  const [selectedAvatarName, setSelectedAvatarName] = useState('')
   const [profileError, setProfileError] = useState('')
 
   const loadAnnouncements = useCallback(async () => {
@@ -80,7 +70,10 @@ export function GuidePage() {
       setWechat(user.wechat ?? '')
       setProvince(user.province ?? '')
       setMbti(user.mbti ?? '')
-      setContact(user.contact ?? '')
+      const [a, b, c] = parseContactToThree(user.contact ?? '')
+      setDesc1(a.slice(0, CONTACT_WORD_MAX_CHARS))
+      setDesc2(b.slice(0, CONTACT_WORD_MAX_CHARS))
+      setDesc3(c.slice(0, CONTACT_WORD_MAX_CHARS))
     }
   }, [user?.id, user?.qq, user?.wechat, user?.province, user?.mbti, user?.contact])
 
@@ -91,6 +84,7 @@ export function GuidePage() {
     }
     setProfileError('')
     setProfileLoading(true)
+    const contact = joinThreeContact(desc1, desc2, desc3)
     try {
       getData(await api.post('/update_contact', { qq, wechat, province, mbti, contact }))
       await refreshUser()
@@ -106,7 +100,6 @@ export function GuidePage() {
 
   const handleUploadAvatar = async (file: File) => {
     setProfileError('')
-    setSelectedAvatarName(file.name)
     if (!/image\/(png|jpeg)/.test(file.type)) {
       setProfileError('头像仅支持 png/jpg/jpeg 格式')
       return
@@ -128,15 +121,44 @@ export function GuidePage() {
     }
   }
 
+  const customAvatarUrl = resolveAssetUrl(user?.avatar_url)
+
   return (
     <>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">主页</h1>
-        <img
-          src={getDisplayAvatar(user)}
-          alt="我的头像"
-          className="h-[7.5rem] w-[7.5rem] rounded-full border object-cover"
-        />
+        <div
+          className="relative h-[7.5rem] w-[7.5rem] shrink-0 overflow-hidden rounded-full border border-border bg-background"
+        >
+          {customAvatarUrl ? (
+            <img
+              src={customAvatarUrl}
+              alt="我的头像"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="pointer-events-none flex h-full w-full items-center justify-center bg-white px-2 text-center text-xs leading-snug text-muted-foreground dark:bg-muted">
+              点击上传头像
+            </div>
+          )}
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+            disabled={avatarUploading}
+            aria-label="选择头像图片"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void handleUploadAvatar(f)
+              e.target.value = ''
+            }}
+          />
+          {avatarUploading && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/70 text-xs text-foreground">
+              上传中…
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 公告列表 */}
@@ -178,7 +200,7 @@ export function GuidePage() {
             <div><span className="text-muted-foreground">Wechat：</span>{user?.wechat ?? '—'}</div>
             <div><span className="text-muted-foreground">来自：</span>{user?.province ?? '—'}</div>
             <div><span className="text-muted-foreground">MBTI：</span>{user?.mbti ?? '—'}</div>
-            <div><span className="text-muted-foreground">自我描述：</span>{user?.contact ?? '—'}</div>
+            <div><span className="text-muted-foreground">自我描述：</span>{formatContactForCard(user?.contact)}</div>
           </div>
           <div className="border-t pt-4">
             <div className="mb-3 text-sm font-medium">编辑个人信息</div>
@@ -207,36 +229,46 @@ export function GuidePage() {
               </div>
               <div className="grid gap-1.5">
                 <Label>MBTI</Label>
-                <Select value={mbti?.trim() && MBTI_TYPES.includes(mbti.trim().toUpperCase()) ? mbti.trim().toUpperCase() : '_none'} onValueChange={(v) => setMbti(v === '_none' ? '' : v)}>
+                <Select
+                  value={mbtiSelectValue(mbti)}
+                  onValueChange={(v) => setMbti(v === '_none' ? '' : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="请选择 MBTI 类型" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">请选择</SelectItem>
-                    {MBTI_TYPES.map((m) => (
+                    {MBTI_OPTIONS.map((m) => (
                       <SelectItem key={m} value={m}>{m}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-1.5">
-                <Label>用几个词语描述自己（英文分号分隔）</Label>
-                <Textarea value={contact} onChange={(e) => setContact(e.target.value)} placeholder="用几个词语描述一下自己" rows={2} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label>头像（不超过10M）</Label>
-                <Input
-                  type="file"
-                  accept="image/png,image/jpeg"
-                  disabled={avatarUploading}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) handleUploadAvatar(f)
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {selectedAvatarName || '未选择任何文件'}
-                </p>
+                <Label>用三个词描述自己（每个最多{CONTACT_WORD_MAX_CHARS}个字符）</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    value={desc1}
+                    maxLength={CONTACT_WORD_MAX_CHARS}
+                    onChange={(e) => setDesc1(e.target.value.slice(0, CONTACT_WORD_MAX_CHARS))}
+                    placeholder="词 1"
+                    className="min-w-0 w-[14rem] max-w-full shrink-0"
+                  />
+                  <Input
+                    value={desc2}
+                    maxLength={CONTACT_WORD_MAX_CHARS}
+                    onChange={(e) => setDesc2(e.target.value.slice(0, CONTACT_WORD_MAX_CHARS))}
+                    placeholder="词 2"
+                    className="min-w-0 w-[14rem] max-w-full shrink-0"
+                  />
+                  <Input
+                    value={desc3}
+                    maxLength={CONTACT_WORD_MAX_CHARS}
+                    onChange={(e) => setDesc3(e.target.value.slice(0, CONTACT_WORD_MAX_CHARS))}
+                    placeholder="词 3"
+                    className="min-w-0 w-[14rem] max-w-full shrink-0"
+                  />
+                </div>
               </div>
               {profileError && <p className="text-sm text-destructive">{profileError}</p>}
               <Button onClick={handleSaveProfile} disabled={profileLoading || avatarUploading}>

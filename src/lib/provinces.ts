@@ -7,10 +7,13 @@ export const PROVINCES: string[] = [
   '台湾省', '香港特别行政区', '澳门特别行政区',
 ]
 
-/** MBTI 16 型，用于搜索与展示 */
+/** MBTI 16 型 */
 export const MBTI_TYPES: string[] = [
   'INTJ', 'INTP', 'ENTJ', 'ENTP',
   'INFJ', 'INFP', 'ENFJ', 'ENFP',
   'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
   'ISTP', 'ISFP', 'ESTP', 'ESFP',
 ]
+
+/** MBTI 下拉选项（含「未知」），用于主页与筛选 */
+export const MBTI_OPTIONS: string[] = [...MBTI_TYPES, '未知']

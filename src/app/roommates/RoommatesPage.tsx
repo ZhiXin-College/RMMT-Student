@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { PROVINCES, MBTI_TYPES } from '@/lib/provinces'
+import { PROVINCES, MBTI_OPTIONS } from '@/lib/provinces'
 import { useAuth } from '@/hooks/useAuth'
 interface RoommateStudent {
   id: number
@@ -72,7 +72,13 @@ export function RoommatesPage() {
     const name = searchName.trim().toLowerCase()
     if (name) list = list.filter((s) => s.name.toLowerCase().includes(name))
     if (searchProvince) list = list.filter((s) => (s.province ?? '') === searchProvince)
-    if (searchMbti) list = list.filter((s) => (s.mbti ?? '').toUpperCase() === searchMbti)
+    if (searchMbti) {
+      list = list.filter((s) => {
+        const m = (s.mbti ?? '').trim()
+        if (searchMbti === '未知') return m === '未知'
+        return m.toUpperCase() === searchMbti.toUpperCase()
+      })
+    }
     return list
   }, [allFiltered, searchName, searchProvince, searchMbti])
 
@@ -126,7 +132,7 @@ export function RoommatesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="_all">全部</SelectItem>
-                  {MBTI_TYPES.map((m) => (
+                  {MBTI_OPTIONS.map((m) => (
                     <SelectItem key={m} value={m}>{m}</SelectItem>
                   ))}
                 </SelectContent>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { StudentCard } from '@/components/StudentCard'
 import { QuestionnaireReadOnly } from '@/components/questionnaire/QuestionnaireReadOnly'
 import type { Student, QuestionnaireItem } from '@/types/api'
+import { parseContactWords } from '@/lib/contactDisplay'
 import { cn } from '@/lib/utils'
 
 function resolveAssetUrl(url?: string | null): string {
@@ -19,24 +20,8 @@ function resolveAssetUrl(url?: string | null): string {
   return `${base}/${url}`
 }
 
-function getAvatarUrl(student: { avatar_url?: string | null; qq?: string | null; id: number }): string {
-  const custom = resolveAssetUrl(student.avatar_url)
-  if (custom) return custom
-  if (student.qq && student.qq.length > 0) {
-    return `https://q.qlogo.cn/headimg_dl?dst_uin=${student.qq}&spec=640`
-  }
-  let h = 0
-  const s = `${new Date().getFullYear()}rmmp.${student.id}@chacuo.net`
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i)
-    h |= 0
-  }
-  return `https://gravatar.loli.net/avatar/${Math.abs(h).toString(16)}?d=retro`
-}
-
-function getTraits(contact?: string | null): string[] {
-  if (!contact || contact.length < 15) return []
-  return contact.split(/[,，;；]/).map((t) => t.trim()).filter(Boolean)
+function getAvatarUrl(student: { avatar_url?: string | null }): string {
+  return resolveAssetUrl(student.avatar_url)
 }
 
 export function RoommateDetailPage() {
@@ -91,7 +76,8 @@ export function RoommateDetailPage() {
   if (loading) return <div className="py-8 text-center text-muted-foreground">加载中...</div>
   if (!student) return <div className="py-8 text-center">未找到该同学</div>
 
-  const traits = getTraits(student.contact)
+  const traits = parseContactWords(student.contact)
+  const avatarSrc = getAvatarUrl(student)
   const questionnaireItems: QuestionnaireItem[] = (student.questionnaire_answers ?? [])
     .map((a) => a.item)
     .filter((item): item is QuestionnaireItem => item != null)
@@ -116,11 +102,15 @@ export function RoommateDetailPage() {
       <Card className="border-primary/20">
         <CardContent className="flex flex-col gap-3 p-4">
           <div className="flex gap-3">
-            <img
-              src={getAvatarUrl(student)}
-              alt=""
-              className="h-20 w-20 shrink-0 rounded-full object-cover"
-            />
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="h-20 w-20 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-20 w-20 shrink-0 rounded-full bg-muted" aria-hidden />
+            )}
             <div className="min-w-0 flex-1">
               <div className="font-semibold text-lg">{student.name}</div>
               {student.province && (
@@ -150,8 +140,8 @@ export function RoommateDetailPage() {
           )}
           {traits.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {traits.map((t) => (
-                <span key={t} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
+              {traits.map((t, i) => (
+                <span key={`${i}-${t}`} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
                   {t}
                 </span>
               ))}

@@ -7,6 +7,7 @@ import { getFieldForItem, validateItem } from '@/components/questionnaire/Questi
 import type { QuestionnaireItem, QuestionnairePage } from '@/types/api'
 import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { formatContactForCard } from '@/lib/contactDisplay'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface QuestionWithWeight extends QuestionnaireItem {
@@ -181,7 +182,7 @@ export function QuestionnairePage() {
               <div className="text-muted-foreground">姓名：{user?.name ?? '—'}</div>
               <div className="text-muted-foreground">来自：{user?.province ?? '—'}</div>
               <div className="text-muted-foreground">MBTI：{user?.mbti ?? '—'}</div>
-              <div className="text-muted-foreground">标签：{user?.contact ?? '—'}</div>
+              <div className="text-muted-foreground">标签：{formatContactForCard(user?.contact)}</div>
             </CardContent>
           </Card>
 
