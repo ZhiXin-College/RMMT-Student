@@ -91,7 +91,7 @@ export function RoommatesPage() {
 
   return (
     <>
-      <PageHeader title="舍友大厅 | Matching Hall" />
+      <PageHeader title="舍友大厅" />
       <Card className="mb-6">
         <CardContent className="flex flex-col gap-4 pt-6">
           <div className="flex flex-wrap items-center gap-4">

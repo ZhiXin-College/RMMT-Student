@@ -19,7 +19,18 @@ import {
 interface TeamDetail {
   id: number
   description?: string
-  students: { id: number; name: string; contact?: string; qq?: string; wechat?: string; province?: string; mbti?: string }[]
+  students: {
+    id: number
+    name: string
+    contact?: string
+    qq?: string
+    wechat?: string
+    province?: string
+    mbti?: string
+    avatar_url?: string | null
+    score?: number | null
+    team_students_num?: number
+  }[]
 }
 
 interface TeamRequest {
@@ -52,7 +63,29 @@ export function TeamMyPage() {
         if (cancelled) return
         const detailData = getData<TeamDetail>(detailRes)
         const reqData = getData<{ team_requests: TeamRequest[] }>(reqRes)
-        setTeam(detailData)
+        const teamStudentCount = detailData.students?.length ?? 0
+        const teammates = (detailData.students ?? []).filter((s) => s.id !== user?.id)
+        const teammateScores = new Map<number, number | null>()
+
+        await Promise.all(
+          teammates.map(async (s) => {
+            try {
+              const teammateRes = await api.get(`/student/${s.id}`)
+              const teammateData = getData<{ score?: number | null }>(teammateRes)
+              teammateScores.set(s.id, teammateData.score ?? null)
+            } catch {
+              teammateScores.set(s.id, null)
+            }
+          }),
+        )
+
+        const studentsWithTeamInfo = (detailData.students ?? []).map((s) => ({
+          ...s,
+          team_students_num: s.team_students_num ?? teamStudentCount,
+          score: s.score ?? teammateScores.get(s.id) ?? null,
+        }))
+
+        setTeam({ ...detailData, students: studentsWithTeamInfo })
         setRequests(reqData.team_requests ?? [])
       } catch {
         if (!cancelled) setTeam(null)
@@ -61,7 +94,7 @@ export function TeamMyPage() {
       }
     })()
     return () => { cancelled = true }
-  }, [])
+  }, [user?.id])
 
   const quit = async () => {
     if (!window.confirm('确定要退出队伍吗？')) return
@@ -101,7 +134,7 @@ export function TeamMyPage() {
 
   return (
     <>
-      <PageHeader title="我的组队 | My Team" />
+      <PageHeader title="我的组队" />
       <Card className="mb-6">
         <CardContent className="pt-6">
           <h3 className="mb-4 font-medium">队伍信息</h3>
