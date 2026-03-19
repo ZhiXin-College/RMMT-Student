@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useSystemSettings } from '@/hooks/useSystemSettings'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -22,16 +23,25 @@ import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { to: '/guide', label: '公告与个人资料' },
+  { to: '/guide', label: '主页' },
   { to: '/questionnaire', label: '问卷' },
   { to: '/roommates', label: '舍友大厅' },
   { to: '/team/requests', label: '组队请求' },
   { to: '/team/my', label: '我的组队' },
 ]
 
+function resolveAssetUrl(url?: string) {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) return url
+  const base = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL) : ''
+  if (url.startsWith('/')) return `${base}${url}`
+  return `${base}/${url}`
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth()
   const location = useLocation()
+  const { settings } = useSystemSettings()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [changePwOpen, setChangePwOpen] = useState(false)
 
@@ -43,6 +53,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const teamNavLabel = user?.team_id ? '我的组队' : '组队请求'
   const teamNavTo = user?.team_id ? '/team/my' : '/team/requests'
+  const logoUrl = resolveAssetUrl(settings?.student_logo_url)
+  const studentBg = (settings?.student_guide_bg_color || '').trim()
+  const navSystemName = (settings?.student_nav_system_name || '').trim() || 'Roommate Matcher'
 
   const openChangePw = () => {
     setChangePwOpen(true)
@@ -78,7 +91,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="flex h-14 items-center justify-between px-4">
           <Link to="/" className="font-semibold text-xl text-foreground no-underline md:text-2xl">
-            Roommate Matcher
+            {navSystemName}
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
@@ -111,7 +124,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link to="/guide">公告与个人资料</Link>
+                  <Link to="/guide">主页</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={openChangePw}>
                   修改密码 Change Password
@@ -121,6 +134,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <div
+              className="ml-2 h-9 w-9 shrink-0 overflow-hidden rounded-full border bg-muted/40"
+              aria-label="学生端 Logo"
+              title="学生端 Logo"
+            >
+              {logoUrl ? (
+                <img src={logoUrl} alt="logo" className="h-full w-full object-cover" />
+              ) : null}
+            </div>
           </nav>
 
           <div className="flex items-center gap-2 md:hidden">
@@ -140,12 +163,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link to="/guide">公告与个人资料</Link>
+                  <Link to="/guide">主页</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={openChangePw}>修改密码</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => logout()}>退出登录</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <div
+              className="h-9 w-9 shrink-0 overflow-hidden rounded-full border bg-muted/40"
+              aria-label="学生端 Logo"
+              title="学生端 Logo"
+            >
+              {logoUrl ? (
+                <img src={logoUrl} alt="logo" className="h-full w-full object-cover" />
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -180,7 +213,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="flex-1 bg-gradient-to-r from-amber-50 to-amber-100/80 min-h-[calc(100vh-120px)]">
+      <main
+        className="flex-1 min-h-[calc(100vh-120px)]"
+        style={
+          studentBg
+            ? { backgroundColor: studentBg }
+            : { background: 'linear-gradient(to right, rgb(255 251 235), rgba(254 243 199 / 0.8))' }
+        }
+      >
         <div className="container mx-auto max-w-4xl px-4 py-6">{children}</div>
       </main>
 

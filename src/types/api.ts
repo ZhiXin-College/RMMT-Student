@@ -3,6 +3,7 @@ export interface Student {
   name: string
   team_id: number | null
   team?: Team | null
+  avatar_url?: string
   contact?: string
   qq?: string
   wechat?: string
@@ -50,8 +51,10 @@ export interface QuestionnairePage {
 
 export interface SystemSettings {
   team_max_student_count?: string | number
-  tips?: string
-  questionnaire_json?: unknown
+  login_bg_url?: string
+  student_guide_bg_color?: string
+  student_logo_url?: string
+  student_nav_system_name?: string
 }
 
 export interface Announcement {

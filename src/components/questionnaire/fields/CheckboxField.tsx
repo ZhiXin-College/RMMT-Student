@@ -14,7 +14,7 @@ function parseParams(params?: string): { options?: string[] } {
   }
 }
 
-export function CheckboxField({ item, defaultValue = '', submitValue, disabled, isInvalid }: QuestionFieldProps) {
+export function CheckboxField({ item, defaultValue = '', submitValue, disabled, isInvalid, showLabel = true }: QuestionFieldProps) {
   const { options = [] } = parseParams(item.params)
   const selected = (defaultValue ?? '') ? String(defaultValue).split(',').filter(Boolean) : []
 
@@ -28,7 +28,7 @@ export function CheckboxField({ item, defaultValue = '', submitValue, disabled, 
 
   return (
     <div className="space-y-2">
-      <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label>
+      {showLabel ? <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label> : null}
       <div className="flex flex-wrap gap-4">
         {options.map((opt: string) => (
           <label key={opt} className="flex items-center gap-2 cursor-pointer">

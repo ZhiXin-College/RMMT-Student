@@ -3,7 +3,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
 import { api, getData } from '@/lib/api'
 import type { Announcement } from '@/types/api'
-import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,9 +12,41 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PROVINCES, MBTI_TYPES } from '@/lib/provinces'
 import ReactMarkdown from 'react-markdown'
 
+function resolveAssetUrl(url?: string) {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) return url
+  const base = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL) : ''
+  if (url.startsWith('/')) return `${base}${url}`
+  return `${base}/${url}`
+}
+
+function simpleHash(s: string): string {
+  let h = 0
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i)
+    h |= 0
+  }
+  return Math.abs(h).toString(16)
+}
+
+function getDisplayAvatar(user: {
+  id?: number
+  qq?: string
+  avatar_url?: string
+} | null): string {
+  const custom = resolveAssetUrl(user?.avatar_url)
+  if (custom) return custom
+  if (user?.qq && user.qq.length > 0) {
+    return `https://q.qlogo.cn/headimg_dl?dst_uin=${user.qq}&spec=640`
+  }
+  const id = user?.id ?? 0
+  const email = `${new Date().getFullYear()}rmmp.${id}@chacuo.net`
+  return `https://gravatar.loli.net/avatar/${simpleHash(email)}?d=retro`
+}
+
 export function GuidePage() {
   const { user, refreshUser } = useAuth()
-  const { settings, loading: settingsLoading } = useSystemSettings()
+  const { loading: settingsLoading } = useSystemSettings()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [announcementsLoading, setAnnouncementsLoading] = useState(true)
   const [qq, setQq] = useState(user?.qq ?? '')
@@ -24,6 +55,8 @@ export function GuidePage() {
   const [mbti, setMbti] = useState(user?.mbti ?? '')
   const [contact, setContact] = useState(user?.contact ?? '')
   const [profileLoading, setProfileLoading] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [selectedAvatarName, setSelectedAvatarName] = useState('')
   const [profileError, setProfileError] = useState('')
 
   const loadAnnouncements = useCallback(async () => {
@@ -71,9 +104,40 @@ export function GuidePage() {
   const loading = settingsLoading
   if (loading) return <div className="py-8 text-center text-muted-foreground">加载中...</div>
 
+  const handleUploadAvatar = async (file: File) => {
+    setProfileError('')
+    setSelectedAvatarName(file.name)
+    if (!/image\/(png|jpeg)/.test(file.type)) {
+      setProfileError('头像仅支持 png/jpg/jpeg 格式')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setProfileError('头像最大 10MB')
+      return
+    }
+    setAvatarUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      await api.post('/avatar/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await refreshUser()
+    } catch (e) {
+      setProfileError(e instanceof Error ? e.message : '头像上传失败')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
   return (
     <>
-      <PageHeader title="公告与个人资料" />
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">主页</h1>
+        <img
+          src={getDisplayAvatar(user)}
+          alt="我的头像"
+          className="h-[7.5rem] w-[7.5rem] rounded-full border object-cover"
+        />
+      </div>
 
       {/* 公告列表 */}
       <Card className="mb-6">
@@ -102,22 +166,6 @@ export function GuidePage() {
           )}
         </CardContent>
       </Card>
-
-      {/* 系统说明 / tips */}
-      {settings?.tips && (
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="text-lg font-medium">注意事项</div>
-          </CardHeader>
-          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-            {typeof settings.tips === 'string' ? (
-              <ReactMarkdown>{settings.tips}</ReactMarkdown>
-            ) : (
-              <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(settings.tips)}</pre>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* 个人信息展示与编辑 */}
       <Card>
@@ -175,9 +223,24 @@ export function GuidePage() {
                 <Label>用几个词语描述自己（英文分号分隔）</Label>
                 <Textarea value={contact} onChange={(e) => setContact(e.target.value)} placeholder="用几个词语描述一下自己" rows={2} />
               </div>
+              <div className="grid gap-1.5">
+                <Label>头像（不超过10M）</Label>
+                <Input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  disabled={avatarUploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) handleUploadAvatar(f)
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {selectedAvatarName || '未选择任何文件'}
+                </p>
+              </div>
               {profileError && <p className="text-sm text-destructive">{profileError}</p>}
-              <Button onClick={handleSaveProfile} disabled={profileLoading}>
-                {profileLoading ? '保存中...' : '保存'}
+              <Button onClick={handleSaveProfile} disabled={profileLoading || avatarUploading}>
+                {profileLoading ? '保存中...' : avatarUploading ? '头像上传中...' : '保存'}
               </Button>
             </div>
           </div>

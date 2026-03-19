@@ -20,12 +20,12 @@ function parseParams(params?: string): { options?: string[] } {
   }
 }
 
-export function SelectField({ item, defaultValue = '', submitValue, disabled, isInvalid }: QuestionFieldProps) {
+export function SelectField({ item, defaultValue = '', submitValue, disabled, isInvalid, showLabel = true }: QuestionFieldProps) {
   const { options = [] } = parseParams(item.params)
 
   return (
     <div className="space-y-2">
-      <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label>
+      {showLabel ? <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label> : null}
       <Select
         value={defaultValue || undefined}
         disabled={disabled}

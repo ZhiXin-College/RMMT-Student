@@ -9,6 +9,7 @@ export interface QuestionFieldProps {
   submitValue?: SubmitValueFn
   disabled?: boolean
   isInvalid?: boolean
+  showLabel?: boolean
 }
 
 export interface QuestionFieldComponent {

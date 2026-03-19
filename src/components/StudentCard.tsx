@@ -36,7 +36,17 @@ function simpleHash(s: string): string {
   return Math.abs(h).toString(16)
 }
 
-function getAvatarUrl(student: { qq?: string | null; id: number }): string {
+function resolveAssetUrl(url?: string | null): string {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) return url
+  const base = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL) : ''
+  if (url.startsWith('/')) return `${base}${url}`
+  return `${base}/${url}`
+}
+
+function getAvatarUrl(student: { avatar_url?: string | null; qq?: string | null; id: number }): string {
+  const custom = resolveAssetUrl(student.avatar_url)
+  if (custom) return custom
   if (student.qq && student.qq.length > 0) {
     return `https://q.qlogo.cn/headimg_dl?dst_uin=${student.qq}&spec=640`
   }
@@ -47,7 +57,13 @@ function getAvatarUrl(student: { qq?: string | null; id: number }): string {
 function teamFlagColor(num: number, max: number): string {
   if (num === 0) return 'bg-green-500'
   if (num >= max) return 'bg-red-500'
-  return 'bg-orange-500'
+  return 'bg-yellow-500 text-black'
+}
+
+function teamFlagText(num: number, max: number): string {
+  if (num === 0) return '未组队'
+  if (num >= max) return '已满员'
+  return '已组队'
 }
 
 function numRounding(num: number | null | undefined): string {
@@ -63,6 +79,7 @@ export interface StudentCardProps {
     province?: string | null
     mbti?: string | null
     contact?: string | null
+    avatar_url?: string | null
     qq?: string | null
     wechat?: string | null
     score?: number | null
@@ -79,10 +96,13 @@ export function StudentCard({ student, teamMaxStudentCount }: StudentCardProps) 
     <Link to={`/roommates/${student.id}`} className="block">
       <Card className="min-h-[180px] cursor-pointer border-primary/20 transition-shadow hover:shadow-md hover:border-primary/40">
         <CardContent className="relative flex flex-col gap-3 p-4">
-          <div className={cn('absolute right-2 top-2 rounded px-2 py-0.5 text-xs font-medium text-white', teamFlagColor(teamNum, teamMaxStudentCount))}>
-            {teamNum === 0 ? '未组队' : teamNum >= teamMaxStudentCount ? '满员' : `${teamNum}/${teamMaxStudentCount}`}
+          <div className={cn('absolute left-2 top-2 rounded px-2 py-0.5 text-xs font-medium text-white', teamFlagColor(teamNum, teamMaxStudentCount))}>
+            {teamFlagText(teamNum, teamMaxStudentCount)}
           </div>
-          <div className="flex gap-3 pr-16">
+          <div className="absolute right-2 top-2 rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+            匹配分数 {numRounding(student.score)}
+          </div>
+          <div className="flex gap-3 pt-6">
             <img
               src={getAvatarUrl(student)}
               alt=""
@@ -112,9 +132,6 @@ export function StudentCard({ student, teamMaxStudentCount }: StudentCardProps) 
           <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground">
             <span>QQ {student.qq ?? '—'}</span>
             <span>微信 {student.wechat ?? '—'}</span>
-            {student.score != null && (
-              <span className="text-primary font-medium">匹配 {numRounding(student.score)}</span>
-            )}
           </div>
         </CardContent>
       </Card>

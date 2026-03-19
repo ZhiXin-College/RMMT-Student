@@ -12,12 +12,12 @@ function parseParams(params?: string): { placeholder?: string } {
   }
 }
 
-export function TextAreaField({ item, defaultValue = '', submitValue, disabled, isInvalid }: QuestionFieldProps) {
+export function TextAreaField({ item, defaultValue = '', submitValue, disabled, isInvalid, showLabel = true }: QuestionFieldProps) {
   const { placeholder } = parseParams(item.params)
   const value = defaultValue ?? ''
   return (
     <div className="space-y-2">
-      <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label>
+      {showLabel ? <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label> : null}
       <Textarea
         value={value}
         placeholder={placeholder}

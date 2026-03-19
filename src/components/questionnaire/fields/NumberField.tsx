@@ -3,11 +3,11 @@ import { Input } from '@/components/ui/input'
 import type { QuestionnaireItem } from '@/types/api'
 import type { QuestionFieldProps } from '@/types/questionnaire'
 
-export function NumberField({ item, defaultValue = '', submitValue, disabled, isInvalid }: QuestionFieldProps) {
+export function NumberField({ item, defaultValue = '', submitValue, disabled, isInvalid, showLabel = true }: QuestionFieldProps) {
   const value = defaultValue ?? ''
   return (
     <div className="space-y-2">
-      <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label>
+      {showLabel ? <Label className={isInvalid ? 'text-destructive' : ''}>{item.title}</Label> : null}
       <Input
         type="number"
         value={value}

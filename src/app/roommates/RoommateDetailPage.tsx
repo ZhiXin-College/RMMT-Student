@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api, getData } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
+import { useSystemSettings } from '@/hooks/useSystemSettings'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,17 @@ import { QuestionnaireReadOnly } from '@/components/questionnaire/QuestionnaireR
 import type { Student, QuestionnaireItem } from '@/types/api'
 import { cn } from '@/lib/utils'
 
-function getAvatarUrl(student: { qq?: string | null; id: number }): string {
+function resolveAssetUrl(url?: string | null): string {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) return url
+  const base = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL) : ''
+  if (url.startsWith('/')) return `${base}${url}`
+  return `${base}/${url}`
+}
+
+function getAvatarUrl(student: { avatar_url?: string | null; qq?: string | null; id: number }): string {
+  const custom = resolveAssetUrl(student.avatar_url)
+  if (custom) return custom
   if (student.qq && student.qq.length > 0) {
     return `https://q.qlogo.cn/headimg_dl?dst_uin=${student.qq}&spec=640`
   }
@@ -31,6 +42,7 @@ function getTraits(contact?: string | null): string[] {
 export function RoommateDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
+  const { settings } = useSystemSettings()
   const [student, setStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
   const [inviting, setInviting] = useState(false)
@@ -94,7 +106,8 @@ export function RoommateDetailPage() {
     }
   })
 
-  const teamMax = 4
+  const teamMax = settings?.team_max_student_count != null ? Number(settings.team_max_student_count) : 4
+  const teamStudentCount = student.team?.students?.length ?? 0
   const teammates = student.team?.students?.filter((s) => s.id !== student.id) ?? []
   const hasQuestionnaire = student.has_answered_questionnaire && questionnaireItems.length > 0
 
@@ -124,7 +137,7 @@ export function RoommateDetailPage() {
             组队状态：
             {student.team_id == null ? (
               <span className="text-green-600">未组队</span>
-            ) : (student.team?.students?.length ?? 0) >= teamMax ? (
+            ) : teamStudentCount >= teamMax ? (
               <span className="text-red-600">已组队 满员</span>
             ) : (
               <span className="text-orange-600">已组队</span>
@@ -162,10 +175,14 @@ export function RoommateDetailPage() {
             <h3 className="mb-3 text-sm font-medium text-primary">Ta 的队伍</h3>
             <div className="space-y-2">
               {teammates.map((s) => (
-                <StudentCard key={s.id} student={s} teamMaxStudentCount={teamMax} />
+                <StudentCard
+                  key={s.id}
+                  student={{ ...s, team_students_num: teamStudentCount }}
+                  teamMaxStudentCount={teamMax}
+                />
               ))}
             </div>
-            {user?.team_id == null && user?.id !== student.id && (student.team?.students?.length ?? 0) < teamMax && (
+            {user?.team_id == null && user?.id !== student.id && teamStudentCount < teamMax && (
               <Button className="mt-3 w-full" variant="outline" size="sm" onClick={() => joinTeam(student.team!.id)} disabled={joining}>
                 {joining ? '提交中...' : '申请加入该队'}
               </Button>
@@ -193,7 +210,7 @@ export function RoommateDetailPage() {
 
   return (
     <>
-      <PageHeader title={`${student.name} 的资料 | ${student.name}'s Profile`} />
+      <PageHeader title={`${student.name}的个人资料`} />
       <div className={cn('flex flex-col gap-6 md:flex-row md:items-start')}>
         <aside className={cn('w-full shrink-0 md:w-80 md:sticky md:top-20 md:self-start')}>
           {leftColumn}

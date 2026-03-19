@@ -1,10 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { api, getData } from '@/lib/api'
+
+function resolveAssetUrl(url?: string) {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url)) return url
+  const base = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL) : ''
+  if (url.startsWith('/')) return `${base}${url}`
+  return `${base}/${url}`
+}
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -13,6 +22,18 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [bgUrl, setBgUrl] = useState<string>('')
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const d = getData<{ login_bg_url?: string }>(await api.get('/public_style'))
+        setBgUrl(resolveAssetUrl(d.login_bg_url))
+      } catch {
+        setBgUrl('')
+      }
+    })()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +64,9 @@ export function LoginPage() {
         'flex min-h-screen items-center justify-center bg-amber-50/80 bg-cover bg-center',
         'px-4'
       )}
-      style={{ backgroundImage: "url('https://s2.loli.net/2022/02/01/X5meEt3qr4bKPZB.jpg')" }}
+      style={{
+        backgroundImage: `url('${bgUrl || 'https://s2.loli.net/2022/02/01/X5meEt3qr4bKPZB.jpg'}')`,
+      }}
     >
       <div className="w-full max-w-[420px] rounded-2xl border border-white/20 bg-white/95 p-8 shadow-xl backdrop-blur sm:p-10">
         <div className="mb-6 text-center">

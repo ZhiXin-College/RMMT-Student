@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 interface RoommateStudent {
   id: number
   name: string
+  avatar_url?: string
   contact?: string
   qq?: string
   wechat?: string
@@ -187,7 +188,7 @@ export function RoommatesPage() {
             </h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedNoScore.map((s) => (
-                <StudentCard key={s.id} student={{ ...s, team_students_num: s.team_students_num ?? 0 }} teamMaxStudentCount={teamMax} />
+                <StudentCard key={s.id} student={s} teamMaxStudentCount={teamMax} />
               ))}
             </div>
           </CardContent>

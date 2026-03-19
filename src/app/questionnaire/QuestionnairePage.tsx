@@ -16,6 +16,7 @@ interface QuestionWithWeight extends QuestionnaireItem {
 
 const WEIGHT_TIPS_SHORT =
   '重要的问题权重调高，不重要的调低；采用相对权重计算匹配分数。'
+const WEIGHT_MAX = 20
 
 export function QuestionnairePage() {
   const { user } = useAuth()
@@ -60,6 +61,13 @@ export function QuestionnairePage() {
     [pages, selectedPageId]
   )
   const items = selectedPage?.items ?? []
+  const totalWeight = useMemo(
+    () =>
+      questionWithWeight
+        .filter((q) => Number(q.default_weight) >= 0)
+        .reduce((sum, q) => sum + (Number.isFinite(Number(q.weight)) ? Number(q.weight) : 0), 0),
+    [questionWithWeight]
+  )
 
   // load page draft when page changes
   useEffect(() => {
@@ -88,6 +96,7 @@ export function QuestionnairePage() {
           let weight = el.weight
           if (saved && typeof saved.weight === 'number') weight = saved.weight
           if (el.weight < 0) weight = el.weight
+          if (weight >= 0) weight = Math.max(0, Math.min(WEIGHT_MAX, Math.round(weight)))
           return { ...el, default_weight: el.weight, weight }
         })
         setQuestionWithWeight(withWeight)
@@ -96,7 +105,16 @@ export function QuestionnairePage() {
         if (!cancelled) {
           setPageAnswer({})
           setFormValues({})
-          setQuestionWithWeight(items.map((el) => ({ ...el, default_weight: el.weight, weight: el.weight })))
+          setQuestionWithWeight(
+            items.map((el) => ({
+              ...el,
+              default_weight: el.weight,
+              weight:
+                el.weight >= 0
+                  ? Math.max(0, Math.min(WEIGHT_MAX, Math.round(el.weight)))
+                  : el.weight,
+            }))
+          )
           setFormErrors({})
         }
       }
@@ -201,13 +219,13 @@ export function QuestionnairePage() {
           <div className="w-full flex flex-col gap-6 rounded-2xl border bg-card p-6 shadow-xl">
             <h1 className="text-xl font-semibold">问卷调查</h1>
             <p className="text-sm text-muted-foreground">{WEIGHT_TIPS_SHORT}</p>
+            {selectedPage?.remark ? (
+              <p className="text-sm text-orange-600">{selectedPage.remark}</p>
+            ) : null}
 
             {selectedPage && (
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                 <div className="text-lg font-semibold text-primary">{selectedPage.title}</div>
-                {selectedPage.remark ? (
-                  <div className="mt-1 text-sm text-muted-foreground">{selectedPage.remark}</div>
-                ) : null}
               </div>
             )}
 
@@ -222,37 +240,64 @@ export function QuestionnairePage() {
               ref={(el) => {
                 questionRefsMap.current[item.id] = el
               }}
-              className="space-y-2 rounded-lg border border-transparent p-3 data-[invalid]:border-destructive"
+              className="rounded-lg border border-transparent p-3 data-[invalid]:border-destructive"
               data-invalid={formErrors[item.id] ? true : undefined}
             >
-              <Field
-                item={item}
-                defaultValue={defaultValue}
-                submitValue={submitValue}
-                disabled={!canSave()}
-                isInvalid={formErrors[item.id]}
-              />
-              {showWeight && qWithWeight && (
-                <div className="flex items-center gap-2 pt-1">
-                  <Label className="text-muted-foreground text-sm">我的权重</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.1}
-                    className="w-24"
-                    value={qWithWeight.weight}
+              <div className="space-y-3">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <Label className={formErrors[item.id] ? 'text-destructive' : ''}>
+                    {item.title}
+                  </Label>
+                  {showWeight && qWithWeight && (
+                    <div className="flex shrink-0 items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-muted-foreground text-xs whitespace-nowrap">权重</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={WEIGHT_MAX}
+                          step={1}
+                          className="h-8 w-16 px-2 text-sm"
+                          value={qWithWeight.weight}
+                          disabled={!canSave()}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10)
+                            setQuestionWithWeight((prev) =>
+                              prev.map((x) =>
+                                x.id === item.id
+                                  ? {
+                                      ...x,
+                                      weight: Number.isNaN(v)
+                                        ? 0
+                                        : Math.max(0, Math.min(WEIGHT_MAX, v)),
+                                    }
+                                  : x
+                              )
+                            )
+                          }}
+                        />
+                      </div>
+                      <div className="h-5 w-px bg-border" />
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="text-muted-foreground whitespace-nowrap">权重占比</span>
+                        <span className="font-medium">
+                          {totalWeight > 0 ? `${Math.round((qWithWeight.weight / totalWeight) * 100)}%` : '0%'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Field
+                    item={item}
+                    defaultValue={defaultValue}
+                    submitValue={submitValue}
                     disabled={!canSave()}
-                    onChange={(e) => {
-                      const v = parseFloat(e.target.value)
-                      setQuestionWithWeight((prev) =>
-                        prev.map((x) =>
-                          x.id === item.id ? { ...x, weight: Number.isNaN(v) ? 0 : v } : x
-                        )
-                      )
-                    }}
+                    isInvalid={formErrors[item.id]}
+                    showLabel={false}
                   />
                 </div>
-              )}
+              </div>
             </div>
           )
         })}
