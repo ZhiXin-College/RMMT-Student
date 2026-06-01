@@ -119,3 +119,5 @@ npm run build
 - 题目来源：`GET /questionnaire/list`（`questionnaire_items`），不再使用 `questionnaire_json` 渲染。
 - 答案：按题提交至 `POST /questionnaire/answer`，格式与 Vue 版一致。
 - 管理端可按题维护：`POST/PUT/DELETE /api/admin/questionnaire/item`（见 RMMT-API）。
+
+<!-- commit-test: 2026-06-02 -->
