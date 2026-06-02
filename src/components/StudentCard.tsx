@@ -67,9 +67,10 @@ export interface StudentCardProps {
     team_students_num?: number
   }
   teamMaxStudentCount: number
+  hideTeamFlag?: boolean
 }
 
-export function StudentCard({ student, teamMaxStudentCount }: StudentCardProps) {
+export function StudentCard({ student, teamMaxStudentCount, hideTeamFlag = false }: StudentCardProps) {
   const teamNum = student.team_students_num ?? 0
   const traits = parseContactWords(student.contact)
   const avatarSrc = getAvatarUrl(student)
@@ -78,9 +79,11 @@ export function StudentCard({ student, teamMaxStudentCount }: StudentCardProps) 
     <Link to={`/roommates/${student.id}`} className="block">
       <Card className="min-h-[180px] cursor-pointer border-primary/20 transition-shadow hover:shadow-md hover:border-primary/40">
         <CardContent className="relative flex flex-col gap-3 p-4">
-          <div className={cn('absolute left-2 top-2 rounded px-2 py-0.5 text-xs font-medium text-white', teamFlagColor(teamNum, teamMaxStudentCount))}>
-            {teamFlagText(teamNum, teamMaxStudentCount)}
-          </div>
+          {!hideTeamFlag && (
+            <div className={cn('absolute left-2 top-2 rounded px-2 py-0.5 text-xs font-medium text-white', teamFlagColor(teamNum, teamMaxStudentCount))}>
+              {teamFlagText(teamNum, teamMaxStudentCount)}
+            </div>
+          )}
           <div className="absolute right-2 top-2 rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
             匹配分数 {numRounding(student.score)}
           </div>

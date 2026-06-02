@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { api, getData } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
@@ -44,15 +44,20 @@ interface TeamRequest {
 
 export function TeamMyPage() {
   const { user, refreshUser } = useAuth()
+  const navigate = useNavigate()
   const [team, setTeam] = useState<TeamDetail | null>(null)
   const [requests, setRequests] = useState<TeamRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [quitting, setQuitting] = useState(false)
   const [processing, setProcessing] = useState(false)
 
-  if (user?.team_id == null) return <Navigate to="/team/requests" replace />
-
   useEffect(() => {
+    if (user?.team_id == null) {
+      setLoading(false)
+      setTeam(null)
+      setRequests([])
+      return
+    }
     let cancelled = false
     ;(async () => {
       try {
@@ -94,7 +99,7 @@ export function TeamMyPage() {
       }
     })()
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [user?.id, user?.team_id])
 
   const quit = async () => {
     if (!window.confirm('确定要退出队伍吗？')) return
@@ -102,6 +107,7 @@ export function TeamMyPage() {
     try {
       getData(await api.post('/team/quit'))
       await refreshUser()
+      navigate('/team/requests', { replace: true })
     } finally {
       setQuitting(false)
     }
@@ -127,6 +133,7 @@ export function TeamMyPage() {
   }
 
   if (loading) return <div className="py-8 text-center text-muted-foreground">加载中...</div>
+  if (user?.team_id == null) return <Navigate to="/team/requests" replace />
   if (!team) return <div className="py-8 text-center">未找到队伍信息</div>
 
   const teammates = team.students?.filter((s) => s.id !== user?.id) ?? []
