@@ -1,5 +1,7 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { parseContactWords } from '@/lib/contactDisplay'
 import { cn } from '@/lib/utils'
 
@@ -68,65 +70,148 @@ export interface StudentCardProps {
   }
   teamMaxStudentCount: number
   hideTeamFlag?: boolean
+  hideScore?: boolean
+  showDetailToggle?: boolean
+  detailsOpen?: boolean
+  onDetailsOpenChange?: (open: boolean) => void
 }
 
-export function StudentCard({ student, teamMaxStudentCount, hideTeamFlag = false }: StudentCardProps) {
+export function StudentCard({
+  student,
+  teamMaxStudentCount,
+  hideTeamFlag = false,
+  hideScore = false,
+  showDetailToggle = true,
+  detailsOpen,
+  onDetailsOpenChange,
+}: StudentCardProps) {
+  const navigate = useNavigate()
+  const [internalDetailsOpen, setInternalDetailsOpen] = useState(false)
+  const isDetailsOpen = detailsOpen ?? internalDetailsOpen
+  const setDetailsOpen = (open: boolean) => {
+    if (detailsOpen === undefined) setInternalDetailsOpen(open)
+    onDetailsOpenChange?.(open)
+  }
   const teamNum = student.team_students_num ?? 0
   const traits = parseContactWords(student.contact)
   const avatarSrc = getAvatarUrl(student)
+  const teamFlag = !hideTeamFlag && (
+    <div className={cn('rounded px-2 py-0.5 text-xs font-medium text-white', teamFlagColor(teamNum, teamMaxStudentCount))}>
+      {teamFlagText(teamNum, teamMaxStudentCount)}
+    </div>
+  )
+  const scoreBadge = (
+    <div className="rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+      匹配分数 {numRounding(student.score)}
+    </div>
+  )
+  const provinceText = student.province && (
+    <span className="inline-block max-w-full truncate rounded border border-black px-1.5 py-0.5 text-xs font-medium text-foreground">
+      来自 {student.province}
+    </span>
+  )
+  const mbtiBadge = student.mbti && (
+    <span className={cn('mt-0.5 inline-block rounded px-1.5 py-0.5 text-xs font-medium', getMbtiClass(student.mbti))}>
+      {student.mbti}
+    </span>
+  )
+  const traitBadges = traits.length > 0 && (
+    <div className="flex flex-wrap gap-1">
+      {traits.map((t, i) => (
+        <span key={`${i}-${t}`} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
+          {t}
+        </span>
+      ))}
+    </div>
+  )
+  const contactInfo = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+      <span>QQ {student.qq ?? '—'}</span>
+      <span>微信 {student.wechat ?? '—'}</span>
+    </div>
+  )
+  const openProfile = () => navigate(`/roommates/${student.id}`)
 
   return (
-    <Link to={`/roommates/${student.id}`} className="block">
-      <Card className="min-h-[180px] cursor-pointer border-primary/20 transition-shadow hover:shadow-md hover:border-primary/40">
-        <CardContent className="relative flex flex-col gap-3 p-4">
-          {!hideTeamFlag && (
-            <div className={cn('absolute left-2 top-2 rounded px-2 py-0.5 text-xs font-medium text-white', teamFlagColor(teamNum, teamMaxStudentCount))}>
-              {teamFlagText(teamNum, teamMaxStudentCount)}
+    <div className={cn('student-card-flip', isDetailsOpen && 'student-card-flip--open')}>
+      <Card className="min-h-[220px] border-primary/20 transition-shadow hover:border-primary/40 hover:shadow-md">
+        <CardContent className="student-card-flip__inner relative min-h-[220px] p-0">
+          <div
+            className="student-card-flip__face flex min-h-[220px] cursor-pointer flex-col gap-3 p-4"
+            role="button"
+            tabIndex={0}
+            aria-label={`${student.name}的资料`}
+            onClick={openProfile}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                openProfile()
+              }
+            }}
+          >
+            {teamFlag && <div className="absolute left-4 top-4">{teamFlag}</div>}
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 pt-2 text-center">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt=""
+                  className="h-20 w-20 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="h-20 w-20 shrink-0 rounded-full bg-muted"
+                  aria-hidden
+                />
+              )}
+              <div className="space-y-1">
+                <div className="max-w-full truncate text-lg font-semibold text-foreground">{student.name}</div>
+                {traitBadges}
+              </div>
             </div>
-          )}
-          <div className="absolute right-2 top-2 rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-            匹配分数 {numRounding(student.score)}
-          </div>
-          <div className="flex gap-3 pt-6">
-            {avatarSrc ? (
-              <img
-                src={avatarSrc}
-                alt=""
-                className="h-16 w-16 shrink-0 rounded-full object-cover sm:h-20 sm:w-20"
-              />
-            ) : (
-              <div
-                className="h-16 w-16 shrink-0 rounded-full bg-muted sm:h-20 sm:w-20"
-                aria-hidden
-              />
+            {showDetailToggle && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="ml-auto mt-auto h-7 px-2 text-xs"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setDetailsOpen(true)
+                }}
+              >
+                详细信息
+              </Button>
             )}
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold text-foreground truncate">{student.name}</div>
-              {student.province && (
-                <div className="text-xs text-muted-foreground truncate">来自 {student.province}</div>
-              )}
-              {student.mbti && (
-                <span className={cn('mt-0.5 inline-block rounded px-1.5 py-0.5 text-xs font-medium', getMbtiClass(student.mbti))}>
-                  {student.mbti}
-                </span>
-              )}
-            </div>
           </div>
-          {traits.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {traits.map((t, i) => (
-                <span key={`${i}-${t}`} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
-                  {t}
+          <div className="student-card-flip__face student-card-flip__face--back flex min-h-[220px] flex-col gap-2 p-4">
+            {!hideScore && (
+              <div className="flex flex-wrap items-center gap-2">
+                {scoreBadge}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {provinceText ?? (
+                <span className="inline-block rounded border border-black px-1.5 py-0.5 text-xs font-medium text-foreground">
+                  来自 —
                 </span>
-              ))}
+              )}
+              {mbtiBadge ?? <span className="text-xs text-muted-foreground">—</span>}
             </div>
-          )}
-          <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground">
-            <span>QQ {student.qq ?? '—'}</span>
-            <span>微信 {student.wechat ?? '—'}</span>
+            <div>{contactInfo}</div>
+            {showDetailToggle && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="ml-auto mt-auto h-7 px-2 text-xs"
+                onClick={() => setDetailsOpen(false)}
+              >
+                收起
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </div>
   )
 }

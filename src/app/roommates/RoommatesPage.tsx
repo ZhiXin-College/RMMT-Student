@@ -82,6 +82,75 @@ function renderHighlighted(text: string, highlight?: string) {
   ))
 }
 
+function useCompletionFlip(isLoading?: boolean, hasResult?: boolean) {
+  const wasLoading = useRef(false)
+  const [flipKey, setFlipKey] = useState(0)
+
+  useEffect(() => {
+    if (wasLoading.current && !isLoading && hasResult) {
+      setFlipKey((value) => value + 1)
+    }
+    wasLoading.current = !!isLoading
+  }, [hasResult, isLoading])
+
+  return flipKey
+}
+
+function SearchLimitNote({
+  matchMode,
+  searchName,
+  searchProvince,
+  searchMbti,
+  onlyUnteamed,
+  activeAiQuery,
+  aiCandidateLimit,
+}: {
+  matchMode: MatchMode
+  searchName: string
+  searchProvince: string
+  searchMbti: string
+  onlyUnteamed: boolean
+  activeAiQuery: string
+  aiCandidateLimit: number
+}) {
+  const filters = []
+  const name = searchName.trim()
+  if (matchMode === 'personal') {
+    if (name) filters.push(<>姓名 <strong>{name}</strong></>)
+    if (searchProvince) filters.push(<>来自 <strong>{searchProvince}</strong></>)
+    if (searchMbti) filters.push(<>MBTI <strong>{searchMbti}</strong></>)
+    if (onlyUnteamed) filters.push(<>仅未组队/未满员</>)
+  }
+
+  return (
+    <div className="text-sm leading-relaxed text-muted-foreground" aria-label="搜索限制">
+      搜索限制：
+      {filters.length > 0 ? (
+        <>
+          已筛选
+          {filters.map((item, index) => (
+            <span key={index}>
+              {index > 0 ? '、' : ''}
+              {item}
+            </span>
+          ))}
+          ；
+        </>
+      ) : (
+        '未设置筛选条件；'
+      )}
+      {activeAiQuery ? (
+        <>
+          已 AI 搜索 <strong className="text-foreground">{activeAiQuery}</strong>，
+        </>
+      ) : (
+        '已按匹配分数从高到低，'
+      )}
+      范围为当前{matchMode === 'dorm' ? '宿舍匹配' : '筛选后的推荐匹配'}前 {aiCandidateLimit} {matchMode === 'dorm' ? '组' : '人'}
+    </div>
+  )
+}
+
 function RecommendedMatchCard({
   student,
   teamMaxStudentCount,
@@ -99,14 +168,20 @@ function RecommendedMatchCard({
   const matchedTraits = explanation?.matched_traits ?? []
   const mismatchedTraits = explanation?.mismatched_traits ?? []
   const canExpand = matchedTraits.length + mismatchedTraits.length > 2
+  const flipKey = useCompletionFlip(loadingExplanation, !!explanation)
 
   return (
     <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(150px,0.7fr)]">
       <StudentCard student={student} teamMaxStudentCount={teamMaxStudentCount} />
-      <div className={cn(
-        'flex flex-col rounded-md border border-primary/15 bg-muted/20 p-3 text-sm',
-        expanded ? 'min-h-[220px]' : 'h-[220px]'
-      )} aria-label="AI评价">
+      <div
+        key={flipKey}
+        className={cn(
+          'ai-evaluation-card flex flex-col rounded-md border border-primary/15 bg-muted/20 p-3 text-sm',
+          flipKey > 0 && 'ai-evaluation-card--flip',
+          expanded ? 'min-h-[220px]' : 'h-[220px]'
+        )}
+        aria-label="AI评价"
+      >
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="font-medium text-primary">AI评价</span>
           {aiSearchResult && (
@@ -183,9 +258,11 @@ function RecommendedDormTeamCard({
   aiSearchResult?: AiDormSearchResult
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const matchedTraits = explanation?.matched_traits ?? []
   const mismatchedTraits = explanation?.mismatched_traits ?? []
   const canExpand = matchedTraits.length + mismatchedTraits.length > 2
+  const flipKey = useCompletionFlip(loadingExplanation, !!explanation)
 
   return (
     <div className="rounded-md border border-primary/15 p-3">
@@ -193,9 +270,15 @@ function RecommendedDormTeamCard({
         <div className="text-sm font-medium text-primary">
           {team.virtual ? '未组队同学' : `候选宿舍 #${team.team_id}`} · {team.member_count}人
         </div>
-        <div className="rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-          匹配分数 {team.match_score.toFixed(2)}
-        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-xs"
+          onClick={() => setDetailsOpen((open) => !open)}
+        >
+          {detailsOpen ? '收起' : '详细信息'}
+        </Button>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {team.members.map((member) => (
@@ -204,13 +287,20 @@ function RecommendedDormTeamCard({
             student={member}
             teamMaxStudentCount={teamMaxStudentCount}
             hideTeamFlag
+            showDetailToggle={false}
+            detailsOpen={detailsOpen}
           />
         ))}
       </div>
-      <div className={cn(
-        'mt-3 flex flex-col rounded-md border border-primary/15 bg-muted/20 p-3 text-sm',
-        expanded ? 'min-h-[160px]' : 'h-[180px]'
-      )} aria-label="AI评价">
+      <div
+        key={flipKey}
+        className={cn(
+          'ai-evaluation-card mt-3 flex flex-col rounded-md border border-primary/15 bg-muted/20 p-3 text-sm',
+          flipKey > 0 && 'ai-evaluation-card--flip',
+          expanded ? 'min-h-[160px]' : 'h-[180px]'
+        )}
+        aria-label="AI评价"
+      >
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="font-medium text-primary">AI评价</span>
           {aiSearchResult && (
@@ -802,11 +892,15 @@ export function RoommatesPage() {
               </div>
             )}
           </div>
-          {activeAiQuery && (
-            <div className="text-sm text-muted-foreground">
-              AI搜索：{activeAiQuery}，范围为当前{matchMode === 'dorm' ? '宿舍匹配' : '筛选后的推荐匹配'}前 {aiCandidateLimitNumber} {matchMode === 'dorm' ? '组' : '人'}
-            </div>
-          )}
+          <SearchLimitNote
+            matchMode={matchMode}
+            searchName={searchName}
+            searchProvince={searchProvince}
+            searchMbti={searchMbti}
+            onlyUnteamed={onlyUnteamed}
+            activeAiQuery={activeAiQuery}
+            aiCandidateLimit={aiCandidateLimitNumber}
+          />
           {aiSearchError && <div className="text-sm text-red-600">{aiSearchError}</div>}
         </CardContent>
       </Card>
