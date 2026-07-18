@@ -3,7 +3,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
 import { api, getData } from '@/lib/api'
 import type { Announcement } from '@/types/api'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -125,48 +124,80 @@ export function GuidePage() {
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">主页</h1>
+      {/* 欢迎横幅 + 头像上传 */}
+      <div className="card-shell relative mb-8 overflow-hidden p-6 sm:p-8">
         <div
-          className="relative h-[7.5rem] w-[7.5rem] shrink-0 overflow-hidden rounded-full border border-border bg-background"
-        >
-          {customAvatarUrl ? (
-            <img
-              src={customAvatarUrl}
-              alt="我的头像"
-              className="h-full w-full object-cover"
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-2xl"
+        />
+        <div className="relative flex flex-wrap items-center justify-between gap-6">
+          <div className="min-w-0">
+            <div className="kicker mb-2">Home</div>
+            <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              你好，{user?.name ?? '同学'}
+            </h1>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+              欢迎来到舍友匹配中心。完善资料、填写问卷，然后去大厅遇见合拍的舍友吧。
+            </p>
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {user?.province && (
+                <span className="rounded-full border border-foreground/15 px-2.5 py-0.5 text-xs">{user.province}</span>
+              )}
+              {user?.mbti && (
+                <span className="rounded-full bg-primary/10 px-2.5 py-0.5 font-grotesk text-xs font-semibold text-primary">
+                  {user.mbti}
+                </span>
+              )}
+              {parseContactToThree(user?.contact ?? '')
+                .filter(Boolean)
+                .map((t, i) => (
+                  <span key={`${i}-${t}`} className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs text-orange-800">
+                    {t}
+                  </span>
+                ))}
+            </div>
+          </div>
+          <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border-2 border-card bg-background shadow-lg ring-2 ring-primary/20">
+            {customAvatarUrl ? (
+              <img
+                src={customAvatarUrl}
+                alt="我的头像"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="pointer-events-none flex h-full w-full items-center justify-center bg-white px-2 text-center text-xs leading-snug text-muted-foreground dark:bg-muted">
+                点击上传头像
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/png,image/jpeg"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+              disabled={avatarUploading}
+              aria-label="选择头像图片"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void handleUploadAvatar(f)
+                e.target.value = ''
+              }}
             />
-          ) : (
-            <div className="pointer-events-none flex h-full w-full items-center justify-center bg-white px-2 text-center text-xs leading-snug text-muted-foreground dark:bg-muted">
-              点击上传头像
-            </div>
-          )}
-          <input
-            type="file"
-            accept="image/png,image/jpeg"
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-            disabled={avatarUploading}
-            aria-label="选择头像图片"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) void handleUploadAvatar(f)
-              e.target.value = ''
-            }}
-          />
-          {avatarUploading && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/70 text-xs text-foreground">
-              上传中…
-            </div>
-          )}
+            {avatarUploading && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/70 text-xs text-foreground">
+                上传中…
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 公告列表 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="text-lg font-medium">公告</div>
-        </CardHeader>
-        <CardContent>
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* 公告列表 */}
+        <section className="card-shell p-6 lg:col-span-3">
+          <div className="mb-5 flex items-baseline gap-3">
+            <h2 className="section-title">公告</h2>
+            <span className="kicker !text-[10px]">Notice</span>
+            <div className="h-px flex-1 bg-primary/15" aria-hidden />
+          </div>
           {announcementsLoading ? (
             <p className="text-sm text-muted-foreground">加载中...</p>
           ) : announcements.length === 0 ? (
@@ -174,9 +205,12 @@ export function GuidePage() {
           ) : (
             <ul className="space-y-4">
               {announcements.map((a) => (
-                <li key={a.id} className="rounded-lg border p-4">
-                  <div className="text-sm font-medium text-muted-foreground">{a.created_at}</div>
-                  <div className="mt-1 text-base font-semibold">{a.title}</div>
+                <li
+                  key={a.id}
+                  className="rounded-xl border border-border/80 bg-background/60 p-4 transition-colors hover:border-primary/30"
+                >
+                  <div className="numeral text-xs font-medium tracking-wide text-muted-foreground">{a.created_at}</div>
+                  <div className="mt-1 font-display text-lg font-semibold tracking-tight">{a.title}</div>
                   {a.content && (
                     <div className="prose prose-sm mt-2 max-w-none dark:prose-invert">
                       <ReactMarkdown>{a.content}</ReactMarkdown>
@@ -186,98 +220,120 @@ export function GuidePage() {
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
+        </section>
 
-      {/* 个人信息展示与编辑 */}
-      <Card>
-        <CardHeader>
-          <div className="text-lg font-medium">我的信息</div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2 text-sm">
-            <div><span className="text-muted-foreground">QQ：</span>{user?.qq ?? '—'}</div>
-            <div><span className="text-muted-foreground">Wechat：</span>{user?.wechat ?? '—'}</div>
-            <div><span className="text-muted-foreground">来自：</span>{user?.province ?? '—'}</div>
-            <div><span className="text-muted-foreground">MBTI：</span>{user?.mbti ?? '—'}</div>
-            <div><span className="text-muted-foreground">自我描述：</span>{formatContactForCard(user?.contact)}</div>
+        {/* 个人信息展示与编辑 */}
+        <section className="card-shell h-fit p-6 lg:col-span-2">
+          <div className="mb-5 flex items-baseline gap-3">
+            <h2 className="section-title">我的信息</h2>
+            <span className="kicker !text-[10px]">Profile</span>
+            <div className="h-px flex-1 bg-primary/15" aria-hidden />
           </div>
-          <div className="border-t pt-4">
-            <div className="mb-3 text-sm font-medium">编辑个人信息</div>
+          <dl className="grid gap-2.5 text-sm">
+            <div className="flex items-baseline justify-between gap-3 border-b border-dashed border-border/70 pb-2">
+              <dt className="shrink-0 text-muted-foreground">QQ</dt>
+              <dd className="numeral truncate font-medium">{user?.qq ?? '—'}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3 border-b border-dashed border-border/70 pb-2">
+              <dt className="shrink-0 text-muted-foreground">Wechat</dt>
+              <dd className="numeral truncate font-medium">{user?.wechat ?? '—'}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3 border-b border-dashed border-border/70 pb-2">
+              <dt className="shrink-0 text-muted-foreground">来自</dt>
+              <dd className="truncate font-medium">{user?.province ?? '—'}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3 border-b border-dashed border-border/70 pb-2">
+              <dt className="shrink-0 text-muted-foreground">MBTI</dt>
+              <dd className="font-grotesk font-medium">{user?.mbti ?? '—'}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="shrink-0 text-muted-foreground">自我描述</dt>
+              <dd className="truncate text-right font-medium">{formatContactForCard(user?.contact) || '—'}</dd>
+            </div>
+          </dl>
+
+          <div className="mt-6 border-t border-primary/15 pt-5">
+            <div className="mb-4 font-grotesk text-xs font-semibold uppercase tracking-[0.18em] text-primary/80">
+              编辑个人信息
+            </div>
             <div className="grid gap-3">
-              <div className="grid gap-1.5">
-                <Label>QQ</Label>
-                <Input value={qq} onChange={(e) => setQq(e.target.value)} placeholder="QQ" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">QQ</Label>
+                  <Input value={qq} onChange={(e) => setQq(e.target.value)} placeholder="QQ" className="numeral" />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">Wechat</Label>
+                  <Input value={wechat} onChange={(e) => setWechat(e.target.value)} placeholder="Wechat" className="numeral" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">你来自哪里</Label>
+                  <Select value={province || '_none'} onValueChange={(v) => setProvince(v === '_none' ? '' : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="请选择省份" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">请选择</SelectItem>
+                      {PROVINCES.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs">MBTI</Label>
+                  <Select
+                    value={mbtiSelectValue(mbti)}
+                    onValueChange={(v) => setMbti(v === '_none' ? '' : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="请选择 MBTI 类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">请选择</SelectItem>
+                      {MBTI_OPTIONS.map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="grid gap-1.5">
-                <Label>Wechat</Label>
-                <Input value={wechat} onChange={(e) => setWechat(e.target.value)} placeholder="Wechat" />
-              </div>
-              <div className="grid gap-1.5">
-                <Label>你来自哪里</Label>
-                <Select value={province || '_none'} onValueChange={(v) => setProvince(v === '_none' ? '' : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="请选择省份" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">请选择</SelectItem>
-                    {PROVINCES.map((p) => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1.5">
-                <Label>MBTI</Label>
-                <Select
-                  value={mbtiSelectValue(mbti)}
-                  onValueChange={(v) => setMbti(v === '_none' ? '' : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="请选择 MBTI 类型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">请选择</SelectItem>
-                    {MBTI_OPTIONS.map((m) => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1.5">
-                <Label>用三个词描述自己（每个最多{CONTACT_WORD_MAX_CHARS}个字符）</Label>
-                <div className="flex flex-wrap items-center gap-2">
+                <Label className="text-xs">用三个词描述自己（每个最多{CONTACT_WORD_MAX_CHARS}个字符）</Label>
+                <div className="grid grid-cols-3 gap-2">
                   <Input
                     value={desc1}
                     maxLength={CONTACT_WORD_MAX_CHARS}
                     onChange={(e) => setDesc1(e.target.value.slice(0, CONTACT_WORD_MAX_CHARS))}
                     placeholder="词 1"
-                    className="min-w-0 w-[14rem] max-w-full shrink-0"
+                    className="min-w-0"
                   />
                   <Input
                     value={desc2}
                     maxLength={CONTACT_WORD_MAX_CHARS}
                     onChange={(e) => setDesc2(e.target.value.slice(0, CONTACT_WORD_MAX_CHARS))}
                     placeholder="词 2"
-                    className="min-w-0 w-[14rem] max-w-full shrink-0"
+                    className="min-w-0"
                   />
                   <Input
                     value={desc3}
                     maxLength={CONTACT_WORD_MAX_CHARS}
                     onChange={(e) => setDesc3(e.target.value.slice(0, CONTACT_WORD_MAX_CHARS))}
                     placeholder="词 3"
-                    className="min-w-0 w-[14rem] max-w-full shrink-0"
+                    className="min-w-0"
                   />
                 </div>
               </div>
               {profileError && <p className="text-sm text-destructive">{profileError}</p>}
-              <Button onClick={handleSaveProfile} disabled={profileLoading || avatarUploading}>
+              <Button onClick={handleSaveProfile} disabled={profileLoading || avatarUploading} className="rounded-xl">
                 {profileLoading ? '保存中...' : avatarUploading ? '头像上传中...' : '保存'}
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </section>
+      </div>
     </>
   )
 }

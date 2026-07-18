@@ -4,50 +4,91 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 36 33% 98%;
+    --foreground: 24 30% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 24 30% 12%;
     /* Orange primary (orange-500) */
-    --primary: 24 95% 53%;
+    --primary: 24 95% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 30 60% 96%;
     --secondary-foreground: 24 95% 30%;
-    --muted: 30 40% 96%;
-    --muted-foreground: 24 10% 45%;
-    --accent: 24 90% 95%;
-    --accent-foreground: 24 95% 30%;
+    --muted: 30 40% 95%;
+    --muted-foreground: 26 12% 42%;
+    --accent: 24 90% 94%;
+    --accent-foreground: 24 95% 32%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 24 20% 90%;
-    --input: 24 20% 90%;
+    --border: 26 25% 88%;
+    --input: 26 25% 86%;
     --ring: 24 95% 53%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 24 30% 12%;
   }
   * {
     @apply border-border;
   }
+  html {
+    /* 与默认主背景一致的暖色，避免 overscroll 回弹时露出白边 */
+    background-color: #fffbeb;
+  }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: system-ui, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-family: 'Noto Sans SC', system-ui, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
   }
 }
 
 @layer components {
-  .ai-evaluation-card {
-    backface-visibility: hidden;
-    transform-style: preserve-3d;
-    transform-origin: center center;
-    will-change: transform;
+  /* ---------- Typography helpers ---------- */
+  .kicker {
+    @apply font-grotesk text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80;
   }
 
-  .ai-evaluation-card--flip {
-    animation: ai-evaluation-flip 640ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+  .page-title {
+    @apply font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl;
   }
 
+  .section-title {
+    @apply font-display text-xl font-semibold tracking-tight text-foreground;
+  }
+
+  .numeral {
+    @apply font-grotesk tabular-nums;
+  }
+
+  /* ---------- Surfaces ---------- */
+  .card-shell {
+    @apply rounded-2xl border border-border/80 bg-card shadow-[0_1px_2px_rgba(120,72,20,0.05),0_12px_32px_-16px_rgba(120,72,20,0.18)];
+  }
+
+  .texture-dots {
+    background-image: radial-gradient(hsl(var(--primary) / 0.10) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  .hairline {
+    @apply border-primary/15;
+  }
+
+  /* Giant translucent match-score used as a card backdrop */
+  .score-watermark {
+    @apply pointer-events-none select-none font-display font-semibold leading-none text-primary;
+    font-size: clamp(5.5rem, 18vw, 8rem);
+    opacity: 0.10;
+    letter-spacing: -0.04em;
+  }
+
+  .score-watermark--sm {
+    font-size: clamp(4rem, 12vw, 5.5rem);
+    opacity: 0.09;
+  }
+
+  /* ---------- Flip card ---------- */
   .student-card-flip {
-    perspective: 900px;
+    perspective: 1200px;
   }
 
   .student-card-flip__inner {
@@ -59,14 +100,111 @@
     transform: rotateY(180deg);
   }
 
+  /* 悬停时轻微侧倾，预告卡片可以翻转（不影响已翻开状态） */
+  .student-card-flip:not(.student-card-flip--open):hover .student-card-flip__inner {
+    transform: rotateY(-7deg);
+  }
+
   .student-card-flip__face {
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
 
   .student-card-flip__face--back {
     transform: rotateY(180deg);
+  }
+
+  /*
+   * 只让当前朝向用户的一面接收指针/滚轮事件：
+   * 修复翻转后背面上的点击穿透到正面（误触跳转个人主页）、
+   * 以及滚轮事件被正面拦截导致 AI 评价无法滚动的问题。
+   */
+  .student-card-flip__face--front {
+    pointer-events: auto;
+  }
+  .student-card-flip--open .student-card-flip__face--front {
+    pointer-events: none;
+  }
+  .student-card-flip__face--back {
+    pointer-events: none;
+  }
+  .student-card-flip--open .student-card-flip__face--back {
+    pointer-events: auto;
+  }
+
+  /* ---------- AI evaluation: fixed-height scroll area ---------- */
+  .ai-scroll {
+    @apply min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1.5;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.35) transparent;
+  }
+  .ai-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+  .ai-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: hsl(var(--primary) / 0.30);
+  }
+  .ai-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Generic thin scrollbar for independent scroll columns */
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.35) transparent;
+  }
+  .scroll-thin::-webkit-scrollbar {
+    width: 5px;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: hsl(var(--primary) / 0.30);
+  }
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* 问卷分页切换：内容淡入 + 轻微上浮 */
+  .questionnaire-fade {
+    animation: questionnaire-fade-in 280ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+  }
+
+  .ai-evaluation-card {
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    transform-origin: center center;
+    will-change: transform;
+  }
+
+  .ai-evaluation-card--flip {
+    animation: ai-evaluation-flip 640ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
+  }
+
+  /* ---------- Avatar stack (overlapping) ---------- */
+  .avatar-stack {
+    @apply flex items-center;
+  }
+  .avatar-stack > * {
+    @apply relative -ml-3 first:ml-0;
+  }
+
+  .avatar-stack__item {
+    @apply block h-14 w-14 overflow-hidden rounded-full border-2 border-card bg-muted object-cover shadow-sm;
+  }
+
+  .avatar-stack__empty {
+    @apply flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-primary/40 bg-primary/5 text-primary/60;
+  }
+
+  /* ---------- Nav pill ---------- */
+  .nav-pill {
+    @apply rounded-full px-3.5 py-1.5 font-grotesk text-[13px] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
+  }
+  .nav-pill--active {
+    @apply bg-primary/10 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.25)];
   }
 }
 
@@ -85,6 +223,17 @@
   }
 }
 
+@keyframes questionnaire-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ai-evaluation-card--flip {
     animation: none;
@@ -92,5 +241,13 @@
 
   .student-card-flip__inner {
     transition: none;
+  }
+
+  .student-card-flip:not(.student-card-flip--open):hover .student-card-flip__inner {
+    transform: none;
+  }
+
+  .questionnaire-fade {
+    animation: none;
   }
 }

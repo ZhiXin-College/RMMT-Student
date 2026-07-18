@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom'
 import { api, getData } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { PageHeader } from '@/components/PageHeader'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StudentCard } from '@/components/StudentCard'
+import { UserPlus } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -132,76 +132,143 @@ export function TeamMyPage() {
     return String(status)
   }
 
+  const statusPill = (status: number) => (
+    <span
+      className={
+        status === 0
+          ? 'rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800'
+          : status === 1
+            ? 'rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700'
+            : 'rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground'
+      }
+    >
+      {statusLabel(status)}
+    </span>
+  )
+
   if (loading) return <div className="py-8 text-center text-muted-foreground">加载中...</div>
   if (user?.team_id == null) return <Navigate to="/team/requests" replace />
   if (!team) return <div className="py-8 text-center">未找到队伍信息</div>
 
   const teammates = team.students?.filter((s) => s.id !== user?.id) ?? []
   const teamMax = 4
+  const memberCount = team.students?.length ?? 0
+  const emptySlots = Math.max(0, teamMax - memberCount)
 
   return (
     <>
-      <PageHeader title="我的组队" />
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <h3 className="mb-4 font-medium">队伍信息</h3>
-          <div className="space-y-1 text-sm">
-            <div>ID：{team.id}</div>
-            <div>人数上限：{teamMax} 人</div>
-          </div>
-          <div className="mt-4">
-            <Button variant="destructive" onClick={quit} disabled={quitting}>
-              退出队伍
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <PageHeader
+        kicker="My Team"
+        title="我的组队"
+        description="查看队伍成员与入队申请，满员后将无法再接收新成员。"
+      />
 
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <h3 className="mb-4 font-medium">我的队友 | My Roommates</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="card-shell mb-8 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="flex items-center gap-5">
+            {/* 成员头像重叠堆叠 + 空位圆圈 */}
+            <div className="avatar-stack" aria-label={`队伍成员 ${memberCount} 人`}>
+              {(team.students ?? []).map((s) => {
+                const src = s.avatar_url
+                  ? /^https?:\/\//i.test(s.avatar_url)
+                    ? s.avatar_url
+                    : `${import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL) : ''}${s.avatar_url.startsWith('/') ? '' : '/'}${s.avatar_url}`
+                  : ''
+                return src ? (
+                  <img key={s.id} src={src} alt={s.name} title={s.name} className="avatar-stack__item" />
+                ) : (
+                  <span
+                    key={s.id}
+                    title={s.name}
+                    className="avatar-stack__item flex items-center justify-center bg-primary/10 font-display text-base font-semibold text-primary"
+                  >
+                    {s.name.slice(0, 1)}
+                  </span>
+                )
+              })}
+              {Array.from({ length: emptySlots }).map((_, i) => (
+                <span key={`empty-${i}`} title="虚位以待" aria-label="还可加入" className="avatar-stack__empty">
+                  <UserPlus className="h-4 w-4" />
+                </span>
+              ))}
+            </div>
+            <div>
+              <div className="font-display text-xl font-semibold tracking-tight">
+                队伍 <span className="numeral">#{team.id}</span>
+              </div>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                <span className="numeral font-medium">{memberCount} / {teamMax}</span> 人
+                {emptySlots > 0 ? (
+                  <span className="ml-2 text-primary/80">还可加入 {emptySlots} 人</span>
+                ) : (
+                  <span className="ml-2 text-red-500">已满员</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <Button variant="destructive" className="rounded-full" onClick={quit} disabled={quitting}>
+            退出队伍
+          </Button>
+        </div>
+      </section>
+
+      <section className="card-shell mb-8 p-6">
+        <div className="mb-4 flex items-baseline gap-3">
+          <h3 className="section-title">我的队友</h3>
+          <span className="kicker !text-[10px]">My Roommates</span>
+          <div className="h-px flex-1 bg-primary/15" aria-hidden />
+        </div>
+        {teammates.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">暂时还没有队友，去舍友大厅找找合拍的同学吧~</p>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {teammates.map((s) => (
               <StudentCard key={s.id} student={s} teamMaxStudentCount={teamMax} />
             ))}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </section>
 
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="mb-4 font-medium">入队申请</h3>
-          {requests.length === 0 ? (
-            <p className="text-muted-foreground">你的队伍还没有收到过入队申请哦，赶快去拉人吧~</p>
-          ) : (
+      <section className="card-shell p-6">
+        <div className="mb-4 flex items-baseline gap-3">
+          <h3 className="section-title">入队申请</h3>
+          <span className="numeral rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+            {requests.length}
+          </span>
+          <div className="h-px flex-1 bg-primary/15" aria-hidden />
+        </div>
+        {requests.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">你的队伍还没有收到过入队申请哦，赶快去拉人吧~</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border/70">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>申请人</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>备注</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  <TableHead>操作</TableHead>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="font-grotesk text-xs uppercase tracking-wider">#</TableHead>
+                  <TableHead className="font-grotesk text-xs uppercase tracking-wider">申请人</TableHead>
+                  <TableHead className="font-grotesk text-xs uppercase tracking-wider">状态</TableHead>
+                  <TableHead className="font-grotesk text-xs uppercase tracking-wider">备注</TableHead>
+                  <TableHead className="font-grotesk text-xs uppercase tracking-wider">创建时间</TableHead>
+                  <TableHead className="font-grotesk text-xs uppercase tracking-wider">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {requests.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell>{row.id}</TableCell>
-                    <TableCell>
-                      {row.student ? <Link to={`/roommates/${row.student.id}`}>{row.student.name} ({row.student.id})</Link> : '—'}
+                    <TableCell className="numeral">{row.id}</TableCell>
+                    <TableCell className="font-medium">
+                      {row.student ? <Link className="text-primary hover:underline" to={`/roommates/${row.student.id}`}>{row.student.name} ({row.student.id})</Link> : '—'}
                     </TableCell>
-                    <TableCell>{statusLabel(row.status)}</TableCell>
-                    <TableCell>{row.reason ?? '—'}</TableCell>
-                    <TableCell>{row.created_at ?? '—'}</TableCell>
+                    <TableCell>{statusPill(row.status)}</TableCell>
+                    <TableCell className="text-muted-foreground">{row.reason ?? '—'}</TableCell>
+                    <TableCell className="numeral text-muted-foreground">{row.created_at ?? '—'}</TableCell>
                     <TableCell>
                       {row.status === 0 && (
                         <div className="flex gap-2">
-                          <Button size="sm" variant="destructive" onClick={() => processRequest(row.id, false)} disabled={processing}>
+                          <Button size="sm" variant="destructive" className="rounded-full" onClick={() => processRequest(row.id, false)} disabled={processing}>
                             拒绝
                           </Button>
-                          <Button size="sm" onClick={() => processRequest(row.id, true)} disabled={processing}>
+                          <Button size="sm" className="rounded-full" onClick={() => processRequest(row.id, true)} disabled={processing}>
                             接受
                           </Button>
                         </div>
@@ -211,9 +278,9 @@ export function TeamMyPage() {
                 ))}
               </TableBody>
             </Table>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </section>
     </>
   )
 }

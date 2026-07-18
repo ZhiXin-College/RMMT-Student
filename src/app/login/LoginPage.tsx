@@ -68,11 +68,13 @@ export function LoginPage() {
         backgroundImage: `url('${bgUrl || 'https://s2.loli.net/2022/02/01/X5meEt3qr4bKPZB.jpg'}')`,
       }}
     >
-      <div className="w-full max-w-[420px] rounded-2xl border border-white/20 bg-white/95 p-8 shadow-xl backdrop-blur sm:p-10">
-        <div className="mb-6 text-center">
-          <div className="mb-2 text-2xl font-semibold text-foreground sm:text-3xl">
+      <div className="w-full max-w-[420px] rounded-3xl border border-white/30 bg-white/95 p-8 shadow-[0_24px_60px_-24px_rgba(120,60,10,0.45)] backdrop-blur sm:p-10">
+        <div className="mb-8 text-center">
+          <div className="kicker mb-3">Roommate Matcher</div>
+          <div className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             RMMT Student
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">登录以开始寻找你的合拍舍友</p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="grid gap-2">
@@ -101,7 +103,7 @@ export function LoginPage() {
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" size="lg" className="h-12 w-full" disabled={loading}>
+          <Button type="submit" size="lg" className="h-12 w-full rounded-xl font-grotesk tracking-wide" disabled={loading}>
             {loading ? '登录中...' : '登录 / Login'}
           </Button>
         </form>

@@ -4,7 +4,6 @@ import { api, getData } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
 import { PageHeader } from '@/components/PageHeader'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StudentCard } from '@/components/StudentCard'
 import { QuestionnaireReadOnly } from '@/components/questionnaire/QuestionnaireReadOnly'
@@ -98,111 +97,133 @@ export function RoommateDetailPage() {
   const hasQuestionnaire = student.has_answered_questionnaire && questionnaireItems.length > 0
 
   const leftColumn = (
-    <div className="space-y-4">
-      <Card className="border-primary/20">
-        <CardContent className="flex flex-col gap-3 p-4">
-          <div className="flex gap-3">
+    <div className="space-y-5">
+      <div className="card-shell relative overflow-hidden p-5">
+        {student.score != null && (
+          <div aria-hidden className="score-watermark score-watermark--sm absolute -bottom-6 -right-3 z-0">
+            {Number(student.score).toFixed(2)}
+          </div>
+        )}
+        <div className="relative z-10 flex flex-col gap-4">
+          <div className="flex items-center gap-4">
             {avatarSrc ? (
               <img
                 src={avatarSrc}
                 alt=""
-                className="h-20 w-20 shrink-0 rounded-full object-cover"
+                className="h-20 w-20 shrink-0 rounded-full border-2 border-card object-cover shadow-md ring-2 ring-primary/20"
               />
             ) : (
-              <div className="h-20 w-20 shrink-0 rounded-full bg-muted" aria-hidden />
+              <div className="h-20 w-20 shrink-0 rounded-full border-2 border-card bg-muted shadow-md ring-2 ring-primary/15" aria-hidden />
             )}
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-lg">{student.name}</div>
-              {student.province && (
-                <div className="text-sm text-muted-foreground">来自 {student.province}</div>
-              )}
-              {student.mbti && (
-                <span className="mt-0.5 inline-block rounded bg-primary/90 px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
-                  {student.mbti}
-                </span>
-              )}
+              <div className="truncate font-display text-2xl font-semibold tracking-tight">{student.name}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {student.province && (
+                  <span className="rounded-full border border-foreground/15 px-2 py-0.5 text-xs">来自 {student.province}</span>
+                )}
+                {student.mbti && (
+                  <span className="rounded-full bg-primary/90 px-2 py-0.5 font-grotesk text-xs font-semibold text-primary-foreground">
+                    {student.mbti}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <div className="text-sm text-muted-foreground">
-            组队状态：
-            {student.team_id == null ? (
-              <span className="text-green-600">未组队</span>
-            ) : teamStudentCount >= teamMax ? (
-              <span className="text-red-600">已组队 满员</span>
-            ) : (
-              <span className="text-orange-600">已组队</span>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span className="text-muted-foreground">
+              组队状态：
+              {student.team_id == null ? (
+                <span className="font-medium text-green-600">未组队</span>
+              ) : teamStudentCount >= teamMax ? (
+                <span className="font-medium text-red-600">已组队 满员</span>
+              ) : (
+                <span className="font-medium text-orange-600">已组队</span>
+              )}
+            </span>
+            {student.score != null && (
+              <span className="text-muted-foreground">
+                匹配指数：<span className="numeral font-semibold text-primary">{Number(student.score).toFixed(2)}</span>
+              </span>
             )}
           </div>
-          {student.score != null && (
-            <div className="text-sm">
-              匹配指数：<span className="font-medium text-primary">{Number(student.score).toFixed(2)}</span>
-            </div>
-          )}
+
           {traits.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {traits.map((t, i) => (
-                <span key={`${i}-${t}`} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
+                <span key={`${i}-${t}`} className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800">
                   {t}
                 </span>
               ))}
             </div>
           )}
-          <div className="border-t border-border/60 pt-2 text-sm text-muted-foreground">
-            <div>QQ {student.qq ?? '—'}</div>
-            <div>微信 {student.wechat ?? '—'}</div>
+
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-xl bg-muted/50 px-3 py-2">
+              <span className="font-grotesk text-[10px] uppercase tracking-wider text-muted-foreground">QQ</span>
+              <div className="numeral mt-0.5 truncate text-sm font-medium text-foreground">{student.qq ?? '—'}</div>
+            </div>
+            <div className="rounded-xl bg-muted/50 px-3 py-2">
+              <span className="font-grotesk text-[10px] uppercase tracking-wider text-muted-foreground">WeChat</span>
+              <div className="numeral mt-0.5 truncate text-sm font-medium text-foreground">{student.wechat ?? '—'}</div>
+            </div>
           </div>
+
           {user?.team_id == null && user?.id !== student.id && student.team_id == null && (
-            <Button size="sm" className="w-full" onClick={invite} disabled={inviting}>
+            <Button size="sm" className="w-full rounded-xl" onClick={invite} disabled={inviting}>
               {inviting ? '发送中...' : '与他组队'}
             </Button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {student.team && (
-        <Card className="border-primary/20">
-          <CardContent className="pt-4">
-            <h3 className="mb-3 text-sm font-medium text-primary">Ta 的队伍</h3>
-            <div className="space-y-2">
-              {teammates.map((s) => (
-                <StudentCard
-                  key={s.id}
-                  student={{ ...s, team_students_num: teamStudentCount }}
-                  teamMaxStudentCount={teamMax}
-                />
-              ))}
-            </div>
-            {user?.team_id == null && user?.id !== student.id && teamStudentCount < teamMax && (
-              <Button className="mt-3 w-full" variant="outline" size="sm" onClick={() => joinTeam(student.team!.id)} disabled={joining}>
-                {joining ? '提交中...' : '申请加入该队'}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <div className="card-shell p-5">
+          <div className="mb-3 flex items-baseline gap-2">
+            <h3 className="section-title !text-base">Ta 的队伍</h3>
+            <span className="numeral rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              {teamStudentCount}/{teamMax}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {teammates.map((s) => (
+              <StudentCard
+                key={s.id}
+                student={{ ...s, team_students_num: teamStudentCount }}
+                teamMaxStudentCount={teamMax}
+              />
+            ))}
+          </div>
+          {user?.team_id == null && user?.id !== student.id && teamStudentCount < teamMax && (
+            <Button className="mt-4 w-full rounded-xl" variant="outline" size="sm" onClick={() => joinTeam(student.team!.id)} disabled={joining}>
+              {joining ? '提交中...' : '申请加入该队'}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   )
 
   const rightColumn = hasQuestionnaire ? (
-    <Card className="border-primary/20">
-      <CardContent className="pt-6">
-        <h3 className="mb-4 font-medium text-primary">Ta 的问卷</h3>
-        <QuestionnaireReadOnly items={questionnaireItems} answersByItemId={answersByItemId} />
-      </CardContent>
-    </Card>
+    <div className="card-shell p-6">
+      <div className="mb-4 flex items-baseline gap-3">
+        <h3 className="section-title">Ta 的问卷</h3>
+        <span className="kicker !text-[10px]">Questionnaire</span>
+        <div className="h-px flex-1 bg-primary/15" aria-hidden />
+      </div>
+      <QuestionnaireReadOnly items={questionnaireItems} answersByItemId={answersByItemId} />
+    </div>
   ) : (
-    <Card className="border-primary/20">
-      <CardContent className="py-8 text-center text-muted-foreground">
-        暂未填写问卷
-      </CardContent>
-    </Card>
+    <div className="card-shell border-dashed py-12 text-center text-muted-foreground">
+      暂未填写问卷
+    </div>
   )
 
   return (
     <>
-      <PageHeader title={`${student.name}的个人资料`} />
+      <PageHeader kicker="Profile" title={`${student.name}的个人资料`} />
       <div className={cn('flex flex-col gap-6 md:flex-row md:items-start')}>
-        <aside className={cn('w-full shrink-0 md:w-80 md:sticky md:top-20 md:self-start')}>
+        <aside className={cn('w-full shrink-0 md:w-80 md:sticky md:top-24 md:self-start')}>
           {leftColumn}
         </aside>
         <main className={cn('min-w-0 flex-1', !hasQuestionnaire && 'md:max-w-md')}>

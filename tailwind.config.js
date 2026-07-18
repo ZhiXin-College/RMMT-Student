@@ -6,6 +6,19 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          "'Noto Sans SC'",
+          'system-ui',
+          "'Segoe UI'",
+          'Roboto',
+          "'PingFang SC'",
+          "'Microsoft YaHei'",
+          'sans-serif',
+        ],
+        display: ["'Fraunces'", "'Noto Serif SC'", "'Songti SC'", 'serif'],
+        grotesk: ["'Space Grotesk'", "'Noto Sans SC'", 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

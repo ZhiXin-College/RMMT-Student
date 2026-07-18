@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { parseContactWords } from '@/lib/contactDisplay'
+import { ArrowRight, RotateCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const MBTI_GROUPS: Record<string, string> = {
@@ -74,6 +74,8 @@ export interface StudentCardProps {
   showDetailToggle?: boolean
   detailsOpen?: boolean
   onDetailsOpenChange?: (open: boolean) => void
+  /** Optional AI evaluation node rendered as a fixed-height scroll area on the card back. */
+  aiEvaluation?: React.ReactNode
 }
 
 export function StudentCard({
@@ -84,6 +86,7 @@ export function StudentCard({
   showDetailToggle = true,
   detailsOpen,
   onDetailsOpenChange,
+  aiEvaluation,
 }: StudentCardProps) {
   const navigate = useNavigate()
   const [internalDetailsOpen, setInternalDetailsOpen] = useState(false)
@@ -95,49 +98,25 @@ export function StudentCard({
   const teamNum = student.team_students_num ?? 0
   const traits = parseContactWords(student.contact)
   const avatarSrc = getAvatarUrl(student)
-  const teamFlag = !hideTeamFlag && (
-    <div className={cn('rounded px-2 py-0.5 text-xs font-medium text-white', teamFlagColor(teamNum, teamMaxStudentCount))}>
-      {teamFlagText(teamNum, teamMaxStudentCount)}
-    </div>
-  )
-  const scoreBadge = (
-    <div className="rounded border border-sky-200 bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-      匹配分数 {numRounding(student.score)}
-    </div>
-  )
-  const provinceText = student.province && (
-    <span className="inline-block max-w-full truncate rounded border border-black px-1.5 py-0.5 text-xs font-medium text-foreground">
-      来自 {student.province}
-    </span>
-  )
-  const mbtiBadge = student.mbti && (
-    <span className={cn('mt-0.5 inline-block rounded px-1.5 py-0.5 text-xs font-medium', getMbtiClass(student.mbti))}>
-      {student.mbti}
-    </span>
-  )
-  const traitBadges = traits.length > 0 && (
-    <div className="flex flex-wrap gap-1">
-      {traits.map((t, i) => (
-        <span key={`${i}-${t}`} className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-800 dark:bg-orange-500/20 dark:text-orange-200">
-          {t}
-        </span>
-      ))}
-    </div>
-  )
-  const contactInfo = (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 pt-2 text-xs text-muted-foreground">
-      <span>QQ {student.qq ?? '—'}</span>
-      <span>微信 {student.wechat ?? '—'}</span>
-    </div>
-  )
+  const scoreText = numRounding(student.score)
+  const showScore = !hideScore && student.score != null
+  const hasAi = aiEvaluation != null
+  const cardHeight = hasAi ? 'h-[320px]' : 'h-[230px]'
+
   const openProfile = () => navigate(`/roommates/${student.id}`)
 
   return (
     <div className={cn('student-card-flip', isDetailsOpen && 'student-card-flip--open')}>
-      <Card className="min-h-[220px] border-primary/20 transition-shadow hover:border-primary/40 hover:shadow-md">
-        <CardContent className="student-card-flip__inner relative min-h-[220px] p-0">
+      <div
+        className={cn(
+          'card-shell group relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_18px_44px_-18px_rgba(194,94,10,0.35)]',
+          cardHeight
+        )}
+      >
+        <div className={cn('student-card-flip__inner relative', cardHeight)}>
+          {/* ------------------------------ 正面 ------------------------------ */}
           <div
-            className="student-card-flip__face flex min-h-[220px] cursor-pointer flex-col gap-3 p-4"
+            className="student-card-flip__face student-card-flip__face--front flex cursor-pointer flex-col overflow-hidden rounded-2xl"
             role="button"
             tabIndex={0}
             aria-label={`${student.name}的资料`}
@@ -149,69 +128,153 @@ export function StudentCard({
               }
             }}
           >
-            {teamFlag && <div className="absolute left-4 top-4">{teamFlag}</div>}
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 pt-2 text-center">
+            {/* 匹配分数水印：放大 + 低透明度作为卡片背景 */}
+            {showScore && (
+              <div
+                aria-hidden
+                className="score-watermark absolute -bottom-8 -right-3 z-0 transition-opacity duration-300 group-hover:opacity-[0.16]"
+              >
+                {scoreText}
+              </div>
+            )}
+
+            <div className="relative z-10 flex items-start justify-between p-3.5 pb-0">
+              {!hideTeamFlag ? (
+                <span
+                  className={cn(
+                    'rounded-full px-2.5 py-0.5 font-grotesk text-[11px] font-semibold tracking-wide text-white shadow-sm',
+                    teamFlagColor(teamNum, teamMaxStudentCount)
+                  )}
+                >
+                  {teamFlagText(teamNum, teamMaxStudentCount)}
+                </span>
+              ) : (
+                <span />
+              )}
+              {showScore && (
+                <span className="numeral rounded-full border border-primary/25 bg-background/80 px-2.5 py-0.5 text-xs font-semibold text-primary shadow-sm backdrop-blur">
+                  匹配 {scoreText}
+                </span>
+              )}
+            </div>
+
+            <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-2 px-4 pb-2 text-center">
               {avatarSrc ? (
                 <img
                   src={avatarSrc}
                   alt=""
-                  className="h-20 w-20 shrink-0 rounded-full object-cover"
+                  className="h-16 w-16 shrink-0 rounded-full border-2 border-card object-cover shadow-md ring-2 ring-primary/20"
                 />
               ) : (
-                <div
-                  className="h-20 w-20 shrink-0 rounded-full bg-muted"
-                  aria-hidden
-                />
+                <div className="h-16 w-16 shrink-0 rounded-full border-2 border-card bg-muted shadow-md ring-2 ring-primary/15" aria-hidden />
               )}
-              <div className="space-y-1">
-                <div className="max-w-full truncate text-lg font-semibold text-foreground">{student.name}</div>
-                {traitBadges}
+              <div className="min-w-0 space-y-1">
+                <div className="max-w-full truncate font-display text-lg font-semibold tracking-tight text-foreground">
+                  {student.name}
+                </div>
+                {traits.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-1">
+                    {traits.map((t, i) => (
+                      <span
+                        key={`${i}-${t}`}
+                        className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-800"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
+
             {showDetailToggle && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="ml-auto mt-auto h-7 px-2 text-xs"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setDetailsOpen(true)
-                }}
-              >
-                详细信息
-              </Button>
-            )}
-          </div>
-          <div className="student-card-flip__face student-card-flip__face--back flex min-h-[220px] flex-col gap-2 p-4">
-            {!hideScore && (
-              <div className="flex flex-wrap items-center gap-2">
-                {scoreBadge}
+              <div className="relative z-10 flex items-center justify-between px-3.5 pb-3">
+                <span className="font-grotesk text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                  Tap to flip
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 rounded-full px-3 text-xs"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setDetailsOpen(true)
+                  }}
+                >
+                  详细信息
+                  <ArrowRight className="ml-1 h-3 w-3" />
+                </Button>
               </div>
             )}
-            <div className="flex flex-wrap items-center gap-2">
-              {provinceText ?? (
-                <span className="inline-block rounded border border-black px-1.5 py-0.5 text-xs font-medium text-foreground">
-                  来自 —
+          </div>
+
+          {/* ------------------------------ 背面 ------------------------------ */}
+          <div className="student-card-flip__face student-card-flip__face--back flex flex-col overflow-hidden rounded-2xl bg-card p-3.5">
+            <div className="mb-2 flex items-center justify-between gap-2 border-b border-primary/10 pb-2">
+              <span className="min-w-0 truncate font-display text-base font-semibold tracking-tight">
+                {student.name}
+              </span>
+              {showScore && (
+                <span className="numeral shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {scoreText}
                 </span>
               )}
-              {mbtiBadge ?? <span className="text-xs text-muted-foreground">—</span>}
             </div>
-            <div>{contactInfo}</div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full border border-foreground/20 px-2 py-0.5 text-xs font-medium text-foreground">
+                来自 {student.province ?? '—'}
+              </span>
+              {student.mbti ? (
+                <span className={cn('rounded-full px-2 py-0.5 font-grotesk text-xs font-semibold', getMbtiClass(student.mbti))}>
+                  {student.mbti}
+                </span>
+              ) : (
+                <span className="rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground">
+                  MBTI —
+                </span>
+              )}
+            </div>
+
+            <div className="mt-2.5 grid grid-cols-2 gap-1.5 text-xs">
+              <div className="rounded-lg bg-muted/50 px-2.5 py-1.5">
+                <span className="font-grotesk text-[10px] uppercase tracking-wider text-muted-foreground">QQ</span>
+                <div className="numeral mt-0.5 truncate font-medium text-foreground">{student.qq ?? '—'}</div>
+              </div>
+              <div className="rounded-lg bg-muted/50 px-2.5 py-1.5">
+                <span className="font-grotesk text-[10px] uppercase tracking-wider text-muted-foreground">WeChat</span>
+                <div className="numeral mt-0.5 truncate font-medium text-foreground">{student.wechat ?? '—'}</div>
+              </div>
+            </div>
+
+            {/* AI 评价：固定高度滚动区，不改变卡片尺寸 */}
+            {hasAi && (
+              <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-xl border border-primary/15 bg-muted/25 p-2.5">
+                {aiEvaluation}
+              </div>
+            )}
+
             {showDetailToggle && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="ml-auto mt-auto h-7 px-2 text-xs"
-                onClick={() => setDetailsOpen(false)}
-              >
-                收起
-              </Button>
+              <div className="mt-2 flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 rounded-full px-3 text-xs"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setDetailsOpen(false)
+                  }}
+                >
+                  <RotateCw className="mr-1 h-3 w-3" />
+                  返回
+                </Button>
+              </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

@@ -8,7 +8,6 @@ import type { QuestionnaireItem, QuestionnairePage } from '@/types/api'
 import { LoaderCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { formatContactForCard } from '@/lib/contactDisplay'
-import { Card, CardContent } from '@/components/ui/card'
 
 interface QuestionWithWeight extends QuestionnaireItem {
   default_weight: number
@@ -160,6 +159,11 @@ export function QuestionnairePage() {
     }
   }, [canSave, selectedPageId, questionWithWeight, formValues, items, validateForm])
 
+  // 切换分页时窗口回到顶部：侧栏 sticky 的自然位与吸附位重合，不会上下跳动
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [selectedPageId])
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -173,60 +177,73 @@ export function QuestionnairePage() {
   const canNext = pageIndex >= 0 && pageIndex < pages.length - 1
 
   return (
-    <div className="flex w-full flex-grow justify-center overflow-y-auto p-4">
-      <div className="w-full max-w-5xl grid gap-4 md:grid-cols-10">
-        <aside className="md:col-span-3 md:sticky md:top-20 md:self-start space-y-4">
-          <Card className="border-primary/20">
-            <CardContent className="pt-6 space-y-2 text-sm">
-              <div className="font-semibold text-base">我的资料</div>
-              <div className="text-muted-foreground">姓名：{user?.name ?? '—'}</div>
-              <div className="text-muted-foreground">来自：{user?.province ?? '—'}</div>
-              <div className="text-muted-foreground">MBTI：{user?.mbti ?? '—'}</div>
-              <div className="text-muted-foreground">标签：{formatContactForCard(user?.contact)}</div>
-            </CardContent>
-          </Card>
+    <div className="w-full">
+      <div className="w-full grid gap-6 md:grid-cols-10">
+        {/* 侧栏：sticky 固定在最上方；切换分页时窗口回顶部，侧栏视觉位置不变 */}
+        <aside className="space-y-5 md:col-span-3 md:sticky md:top-24 md:self-start">
+          <div className="card-shell p-5">
+            <div className="mb-3 flex items-baseline gap-2">
+              <span className="section-title !text-base">我的资料</span>
+              <span className="kicker !text-[10px]">Me</span>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between gap-2"><span className="text-muted-foreground">姓名</span><span className="font-medium">{user?.name ?? '—'}</span></div>
+              <div className="flex justify-between gap-2"><span className="text-muted-foreground">来自</span><span className="font-medium">{user?.province ?? '—'}</span></div>
+              <div className="flex justify-between gap-2"><span className="text-muted-foreground">MBTI</span><span className="font-grotesk font-medium">{user?.mbti ?? '—'}</span></div>
+              <div className="flex justify-between gap-2"><span className="shrink-0 text-muted-foreground">标签</span><span className="truncate text-right font-medium">{formatContactForCard(user?.contact) || '—'}</span></div>
+            </div>
+          </div>
 
-          <Card className="border-primary/20">
-            <CardContent className="pt-6 space-y-3">
-              <div className="font-medium text-sm text-primary">分页</div>
-              <div className="space-y-1">
-                {pages.map((p, idx) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
-                      p.id === selectedPageId ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
-                    }`}
-                    onClick={() => setSelectedPageId(p.id)}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium">{p.title}</span>
-                      <span className="text-xs text-muted-foreground">{idx + 1}/{pages.length}</span>
-                    </div>
-                    {p.remark ? <div className="text-xs text-muted-foreground line-clamp-1">{p.remark}</div> : null}
-                  </button>
-                ))}
-                {pages.length === 0 && (
-                  <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                    暂无分页
+          <div className="card-shell p-5">
+            <div className="mb-3 flex items-baseline gap-2">
+              <span className="section-title !text-base">分页</span>
+              <span className="kicker !text-[10px]">Pages</span>
+            </div>
+            <div className="space-y-1.5">
+              {pages.map((p, idx) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                    p.id === selectedPageId
+                      ? 'border-primary/50 bg-primary/5 shadow-sm'
+                      : 'border-border hover:border-primary/25 hover:bg-muted/40'
+                  }`}
+                  onClick={() => setSelectedPageId(p.id)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{p.title}</span>
+                    <span className="numeral text-xs text-muted-foreground">{idx + 1}/{pages.length}</span>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  {p.remark ? <div className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{p.remark}</div> : null}
+                </button>
+              ))}
+              {pages.length === 0 && (
+                <div className="rounded-xl border border-dashed p-3 text-xs text-muted-foreground">
+                  暂无分页
+                </div>
+              )}
+            </div>
+          </div>
         </aside>
 
         <main className="md:col-span-7">
-          <div className="w-full flex flex-col gap-6 rounded-2xl border bg-card p-6 shadow-xl">
-            <h1 className="text-xl font-semibold">问卷调查</h1>
-            <p className="text-sm text-muted-foreground">{WEIGHT_TIPS_SHORT}</p>
+          <div
+            key={selectedPageId ?? 'empty'}
+            className="questionnaire-fade card-shell flex w-full flex-col gap-6 p-6 sm:p-7"
+          >
+            <div>
+              <div className="kicker mb-1.5">Questionnaire</div>
+              <h1 className="page-title !text-2xl sm:!text-3xl">问卷调查</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{WEIGHT_TIPS_SHORT}</p>
+            </div>
             {selectedPage?.remark ? (
-              <p className="text-sm text-orange-600">{selectedPage.remark}</p>
+              <p className="rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2.5 text-sm text-orange-700">{selectedPage.remark}</p>
             ) : null}
 
             {selectedPage && (
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-                <div className="text-lg font-semibold text-primary">{selectedPage.title}</div>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <div className="font-display text-lg font-semibold tracking-tight text-primary">{selectedPage.title}</div>
               </div>
             )}
 
@@ -250,7 +267,7 @@ export function QuestionnairePage() {
                     {item.title}
                   </Label>
                   {showWeight && qWithWeight && (
-                    <div className="flex shrink-0 items-center gap-2 rounded-md border bg-muted/20 px-2 py-1.5">
+                    <div className="flex shrink-0 items-center gap-2 rounded-full border bg-muted/30 px-3 py-1.5">
                       <div className="flex items-center gap-1.5">
                         <Label className="text-muted-foreground text-xs whitespace-nowrap">权重</Label>
                         <Input
@@ -258,7 +275,7 @@ export function QuestionnairePage() {
                           min={0}
                           max={WEIGHT_MAX}
                           step={1}
-                          className="h-8 w-16 px-2 text-sm"
+                          className="numeral h-7 w-14 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-0"
                           value={qWithWeight.weight}
                           disabled={!canSave()}
                           onChange={(e) => {
@@ -278,10 +295,10 @@ export function QuestionnairePage() {
                           }}
                         />
                       </div>
-                      <div className="h-5 w-px bg-border" />
+                      <div className="h-4 w-px bg-border" />
                       <div className="flex items-center gap-1 text-xs">
-                        <span className="text-muted-foreground whitespace-nowrap">权重占比</span>
-                        <span className="font-medium">
+                        <span className="text-muted-foreground whitespace-nowrap">占比</span>
+                        <span className="numeral font-semibold text-primary">
                           {totalWeight > 0 ? `${Math.round((qWithWeight.weight / totalWeight) * 100)}%` : '0%'}
                         </span>
                       </div>

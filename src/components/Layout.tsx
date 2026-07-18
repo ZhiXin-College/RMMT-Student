@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
 import { Button } from '@/components/ui/button'
+import { OnboardingTour } from '@/components/OnboardingTour'
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { settings } = useSystemSettings()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [changePwOpen, setChangePwOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
 
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw] = useState('')
@@ -56,6 +58,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const logoUrl = resolveAssetUrl(settings?.student_logo_url)
   const studentBg = (settings?.student_guide_bg_color || '').trim()
   const navSystemName = (settings?.student_nav_system_name || '').trim() || 'Roommate Matcher'
+
+  // 首次登录（本浏览器内该账号未见指引）时自动弹出新手指引
+  useEffect(() => {
+    if (!user?.id) return
+    try {
+      if (localStorage.getItem(`rmmt_onboarding_v1_seen_${user.id}`)) return
+    } catch {
+      return
+    }
+    const timer = window.setTimeout(() => setTourOpen(true), 700)
+    return () => window.clearTimeout(timer)
+  }, [user?.id])
+
+  const closeTour = () => {
+    setTourOpen(false)
+    try {
+      if (user?.id) localStorage.setItem(`rmmt_onboarding_v1_seen_${user.id}`, '1')
+    } catch {
+      // localStorage 不可用时静默忽略
+    }
+  }
 
   const openChangePw = () => {
     setChangePwOpen(true)
@@ -86,12 +109,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const wideContent = location.pathname.startsWith('/roommates') || location.pathname.startsWith('/questionnaire')
+
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background">
-        <div className="flex h-14 items-center justify-between px-4">
-          <Link to="/" className="font-semibold text-xl text-foreground no-underline md:text-2xl">
-            {navSystemName}
+      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
+        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
+          <Link to="/" className="group flex items-baseline gap-2 no-underline">
+            <span className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-[1.7rem]">
+              {navSystemName}
+            </span>
+            <span className="hidden font-grotesk text-[10px] font-semibold uppercase tracking-[0.3em] text-primary/70 sm:inline">
+              RMMT
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
@@ -99,32 +129,29 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={to}
                 to={to}
-                className={cn(
-                  'px-3 py-2 text-sm font-medium rounded-md',
-                  location.pathname === to ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                )}
+                className={cn('nav-pill', location.pathname === to && 'nav-pill--active')}
               >
                 {label}
               </Link>
             ))}
             <Link
               to={teamNavTo}
-              className={cn(
-                'px-3 py-2 text-sm font-medium rounded-md',
-                location.pathname.startsWith('/team') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
+              className={cn('nav-pill', location.pathname.startsWith('/team') && 'nav-pill--active')}
             >
               {teamNavLabel}
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="ml-1 rounded-full font-grotesk tracking-wide">
                   Hello，{user?.name}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link to="/guide">主页</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTourOpen(true)}>
+                  新手指引 Guide Tour
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={openChangePw}>
                   修改密码 Change Password
@@ -136,7 +163,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
 
             <div
-              className="ml-2 h-9 w-9 shrink-0 overflow-hidden rounded-full border bg-muted/40"
+              className="ml-2 h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-primary/25 bg-muted/40 shadow-sm"
               aria-label="学生端 Logo"
               title="学生端 Logo"
             >
@@ -157,7 +184,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="font-grotesk">
                   {user?.name}
                 </Button>
               </DropdownMenuTrigger>
@@ -165,13 +192,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem asChild>
                   <Link to="/guide">主页</Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTourOpen(true)}>新手指引</DropdownMenuItem>
                 <DropdownMenuItem onClick={openChangePw}>修改密码</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => logout()}>退出登录</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             <div
-              className="h-9 w-9 shrink-0 overflow-hidden rounded-full border bg-muted/40"
+              className="h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary/25 bg-muted/40"
               aria-label="学生端 Logo"
               title="学生端 Logo"
             >
@@ -184,16 +212,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {mobileOpen && (
           <div className="border-t md:hidden">
-            <nav className="flex flex-col p-2">
+            <nav className="flex flex-col gap-1 p-3">
               {navItems.slice(0, 3).map(({ to, label }) => (
                 <Link
                   key={to}
                   to={to}
                   onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    'px-3 py-2 rounded-md text-sm font-medium',
-                    location.pathname === to ? 'bg-accent' : 'text-muted-foreground'
-                  )}
+                  className={cn('nav-pill', location.pathname === to && 'nav-pill--active')}
                 >
                   {label}
                 </Link>
@@ -201,10 +226,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 to={teamNavTo}
                 onClick={() => setMobileOpen(false)}
-                className={cn(
-                  'px-3 py-2 rounded-md text-sm font-medium',
-                  location.pathname.startsWith('/team') ? 'bg-accent' : 'text-muted-foreground'
-                )}
+                className={cn('nav-pill', location.pathname.startsWith('/team') && 'nav-pill--active')}
               >
                 {teamNavLabel}
               </Link>
@@ -214,25 +236,44 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main
-        className="flex-1 min-h-[calc(100vh-120px)]"
+        className="relative flex flex-1 flex-col min-h-[calc(100vh-120px)]"
         style={
           studentBg
             ? { backgroundColor: studentBg }
-            : { background: 'linear-gradient(to right, rgb(255 251 235), rgba(254 243 199 / 0.8))' }
+            : {
+                background:
+                  'radial-gradient(52rem 30rem at 110% -10%, rgba(251 191 36 / 0.28), transparent 60%), radial-gradient(46rem 28rem at -15% 8%, rgba(249 115 22 / 0.14), transparent 55%), linear-gradient(to right, rgb(255 251 235), rgba(254 243 199 / 0.8))',
+              }
         }
       >
-        <div className="container mx-auto max-w-4xl px-4 py-6">{children}</div>
+        <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />
+        <div
+          className={cn(
+            'container relative mx-auto w-full flex-1 px-4 py-8 sm:px-6',
+            wideContent ? 'max-w-6xl' : 'max-w-4xl'
+          )}
+        >
+          {children}
+        </div>
+        {/* 页脚：悬浮小框，落在主背景内、与内容列对齐，避免底部白条 */}
+        <div
+          className={cn(
+            'container relative mx-auto w-full px-4 pb-6 sm:px-6',
+            wideContent ? 'max-w-6xl' : 'max-w-4xl'
+          )}
+        >
+          <div className="flex w-fit flex-wrap items-center gap-x-3 gap-y-0.5 rounded-2xl border border-border/70 bg-card/70 px-4 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur">
+            <span className="font-grotesk tracking-wide">
+              Designed by <b>Xuanyu Liu</b> · Improved by <b>Yicheng Xiao</b> & <b>Huitian Wang</b> & <b>Xingchen Xiao</b>
+            </span>
+            <span className="font-display italic">
+              Made With <span className="not-italic text-red-500">❤</span>
+            </span>
+          </div>
+        </div>
       </main>
 
-      <footer className="border-t bg-background py-4">
-        <div className="container mx-auto flex flex-wrap items-center justify-between px-4 text-sm text-muted-foreground">
-          <span>
-            Designed by Xuanyu Liu, Improved by Yicheng Xiao & Huitian Wang
-            <br />
-            Made With <span className="text-red-500">❤</span>
-          </span>
-        </div>
-      </footer>
+      <OnboardingTour open={tourOpen} onClose={closeTour} />
 
       <Dialog open={changePwOpen} onOpenChange={setChangePwOpen}>
         <DialogContent showClose={true}>
