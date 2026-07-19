@@ -136,7 +136,7 @@ export function TeamMyPage() {
     <span
       className={
         status === 0
-          ? 'rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800'
+          ? 'rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary'
           : status === 1
             ? 'rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700'
             : 'rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground'

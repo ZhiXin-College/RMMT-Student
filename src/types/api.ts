@@ -53,6 +53,7 @@ export interface SystemSettings {
   team_max_student_count?: string | number
   login_bg_url?: string
   student_guide_bg_color?: string
+  student_theme_color?: string
   student_logo_url?: string
   student_nav_system_name?: string
 }

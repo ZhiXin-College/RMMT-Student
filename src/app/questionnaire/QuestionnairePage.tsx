@@ -238,7 +238,7 @@ export function QuestionnairePage() {
               <p className="mt-2 text-sm text-muted-foreground">{WEIGHT_TIPS_SHORT}</p>
             </div>
             {selectedPage?.remark ? (
-              <p className="rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2.5 text-sm text-orange-700">{selectedPage.remark}</p>
+              <p className="rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-sm text-primary">{selectedPage.remark}</p>
             ) : null}
 
             {selectedPage && (

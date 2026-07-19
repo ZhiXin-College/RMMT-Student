@@ -29,8 +29,8 @@
     @apply border-border;
   }
   html {
-    /* 与默认主背景一致的暖色，避免 overscroll 回弹时露出白边 */
-    background-color: #fffbeb;
+    /* 未设主题时与默认暖色一致；有主题时由 JS 写入 --page-wash */
+    background-color: var(--page-wash, #fffbeb);
   }
   body {
     @apply bg-background text-foreground antialiased;

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { api, getData } from '@/lib/api'
+import { applyStudentTheme } from '@/lib/theme'
 
 function resolveAssetUrl(url?: string) {
   if (!url) return ''
@@ -13,6 +14,20 @@ function resolveAssetUrl(url?: string) {
   const base = import.meta.env.VITE_API_URL ? String(import.meta.env.VITE_API_URL) : ''
   if (url.startsWith('/')) return `${base}${url}`
   return `${base}/${url}`
+}
+
+/** PNG/SVG 可作透明底水印；JPG/JPEG 非透明底则不加水印 */
+function isTransparentCapableLogo(url?: string) {
+  if (!url) return false
+  const path = url.split('?')[0].split('#')[0].toLowerCase()
+  return path.endsWith('.png') || path.endsWith('.svg')
+}
+
+type PublicStyle = {
+  login_bg_url?: string
+  student_logo_url?: string
+  student_nav_system_name?: string
+  student_theme_color?: string
 }
 
 export function LoginPage() {
@@ -23,14 +38,22 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [bgUrl, setBgUrl] = useState<string>('')
+  const [logoUrl, setLogoUrl] = useState<string>('')
+  const [systemName, setSystemName] = useState('Roommate Matcher')
 
   useEffect(() => {
     ;(async () => {
       try {
-        const d = getData<{ login_bg_url?: string }>(await api.get('/public_style'))
+        const d = getData<PublicStyle>(await api.get('/public_style'))
         setBgUrl(resolveAssetUrl(d.login_bg_url))
+        setLogoUrl(resolveAssetUrl(d.student_logo_url))
+        const name = (d.student_nav_system_name || '').trim()
+        setSystemName(name || 'Roommate Matcher')
+        applyStudentTheme((d.student_theme_color || '').trim() || null)
       } catch {
         setBgUrl('')
+        setLogoUrl('')
+        setSystemName('Roommate Matcher')
       }
     })()
   }, [])
@@ -58,21 +81,41 @@ export function LoginPage() {
     }
   }
 
+  const showWatermark = Boolean(logoUrl && isTransparentCapableLogo(logoUrl))
+
   return (
     <div
       className={cn(
-        'flex min-h-screen items-center justify-center bg-amber-50/80 bg-cover bg-center',
+        'relative flex min-h-screen items-center justify-center overflow-hidden bg-background/80 bg-cover bg-center',
         'px-4'
       )}
       style={{
         backgroundImage: `url('${bgUrl || 'https://s2.loli.net/2022/02/01/X5meEt3qr4bKPZB.jpg'}')`,
       }}
     >
-      <div className="w-full max-w-[420px] rounded-3xl border border-white/30 bg-white/95 p-8 shadow-[0_24px_60px_-24px_rgba(120,60,10,0.45)] backdrop-blur sm:p-10">
+      {showWatermark && (
+        <img
+          src={logoUrl}
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute bottom-[-6%] left-1/2 z-0 w-[min(92vw,720px)] -translate-x-1/2 select-none object-contain opacity-[0.22]"
+        />
+      )}
+
+      <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-white/30 bg-white/95 p-8 shadow-[0_24px_60px_-24px_rgba(120,60,10,0.45)] backdrop-blur sm:p-10">
         <div className="mb-8 text-center">
+          {logoUrl ? (
+            <div className="mb-4 flex justify-center">
+              <img
+                src={logoUrl}
+                alt="logo"
+                className="h-16 w-16 object-contain sm:h-[4.5rem] sm:w-[4.5rem]"
+              />
+            </div>
+          ) : null}
           <div className="kicker mb-3">Roommate Matcher</div>
           <div className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            RMMT Student
+            {systemName}
           </div>
           <p className="mt-2 text-sm text-muted-foreground">登录以开始寻找你的合拍舍友</p>
         </div>

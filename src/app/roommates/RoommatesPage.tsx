@@ -177,7 +177,7 @@ function AiEvaluationBody({
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="kicker !text-[10px]">AI 评价</span>
         {aiScore != null && (
-          <span className="numeral rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+          <span className="numeral rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
             相关度 {aiScore}
           </span>
         )}
@@ -214,7 +214,7 @@ function AiEvaluationBody({
           )}
           {mismatchedTraits.length > 0 && (
             <div>
-              <div className="mb-1 font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-700">
+              <div className="mb-1 font-grotesk text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
                 需要沟通
               </div>
               <ul className="space-y-1 text-muted-foreground">
@@ -298,7 +298,7 @@ function RecommendedDormTeamCard({
   const scoreText = scoreNum == null || Number.isNaN(scoreNum) ? null : scoreNum.toFixed(2)
 
   return (
-    <div className="card-shell group relative overflow-hidden p-5 transition-all duration-300 hover:border-primary/40 hover:shadow-[0_18px_44px_-18px_rgba(194,94,10,0.35)]">
+    <div className="card-shell group relative overflow-hidden p-5 transition-all duration-300 hover:border-primary/40 hover:shadow-[0_18px_44px_-18px_hsl(var(--primary)/0.35)]">
       {/* 匹配分数水印 */}
       {scoreText && (
         <div aria-hidden className="score-watermark score-watermark--sm absolute -right-4 -top-6 z-0">
@@ -417,7 +417,7 @@ export function RoommatesPage() {
   const [searchSettingsOpen, setSearchSettingsOpen] = useState(false)
   const [choiceWeight, setChoiceWeight] = useState('0.7')
   const [textWeight, setTextWeight] = useState('0.3')
-  const [aiCandidateLimit, setAiCandidateLimit] = useState('30')
+  const [aiCandidateLimit, setAiCandidateLimit] = useState('20')
   const [activeAiQuery, setActiveAiQuery] = useState('')
   const [aiSearching, setAiSearching] = useState(false)
   const [aiSearchError, setAiSearchError] = useState('')
@@ -441,11 +441,11 @@ export function RoommatesPage() {
   const weightsAreNumbers = Number.isFinite(choiceWeightNumber) && Number.isFinite(textWeightNumber)
   const weightsSum = weightsAreNumbers ? choiceWeightNumber + textWeightNumber : NaN
   const weightsValid = weightsAreNumbers && choiceWeightNumber >= 0 && textWeightNumber >= 0 && Math.abs(weightsSum - 1) < 0.001
-  const aiCandidateLimitValid = Number.isInteger(aiCandidateLimitNumber) && aiCandidateLimitNumber > 0
+  const aiCandidateLimitValid = Number.isInteger(aiCandidateLimitNumber) && aiCandidateLimitNumber > 0 && aiCandidateLimitNumber <= 50
   const searchSettingsError = !weightsValid
     ? '选择题权重与文本题权重之和必须等于 1'
     : !aiCandidateLimitValid
-      ? 'AI搜索范围必须是大于 0 的整数'
+      ? 'AI搜索范围必须是 1–50 的整数'
       : ''
 
   useEffect(() => {
@@ -1001,13 +1001,14 @@ export function RoommatesPage() {
                   <Input
                     type="number"
                     min="1"
+                    max="50"
                     step="1"
                     value={aiCandidateLimit}
                     onChange={(e) => setAiCandidateLimit(e.target.value)}
                     className="numeral h-9"
                   />
                   <div className="text-xs text-muted-foreground">
-                    匹配分数前 x {matchMode === 'dorm' ? '组' : '人'}，建议 30；太长会导致搜索时间变长
+                    匹配分数前 x {matchMode === 'dorm' ? '组' : '人'}，建议 15–20（上限 50）；过大易导致 AI 输出截断失败
                   </div>
                 </div>
                 <div className="sm:col-span-3">

@@ -22,6 +22,12 @@ import { Label } from '@/components/ui/label'
 import { api, getData } from '@/lib/api'
 import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  applyPageWash,
+  applyStudentTheme,
+  buildThemeAmbientBackground,
+  parseCssColor,
+} from '@/lib/theme'
 
 const navItems = [
   { to: '/guide', label: '主页' },
@@ -57,7 +63,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const teamNavTo = user?.team_id ? '/team/my' : '/team/requests'
   const logoUrl = resolveAssetUrl(settings?.student_logo_url)
   const studentBg = (settings?.student_guide_bg_color || '').trim()
+  const themeColor = (settings?.student_theme_color || '').trim()
   const navSystemName = (settings?.student_nav_system_name || '').trim() || 'Roommate Matcher'
+  const themeHsl = parseCssColor(themeColor)
+
+  useEffect(() => {
+    applyStudentTheme(themeColor || null)
+    if (studentBg) applyPageWash(studentBg)
+  }, [themeColor, studentBg])
 
   // 首次登录（本浏览器内该账号未见指引）时自动弹出新手指引
   useEffect(() => {
@@ -114,8 +127,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="group flex items-baseline gap-2 no-underline">
+        {/* 左侧品牌固定；右侧单一操作区，避免 justify-between + 响应式显隐把 Logo 挤到右边 */}
+        <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+          <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-2.5 no-underline">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt=""
+                aria-hidden
+                className="h-9 w-auto max-w-[2.75rem] shrink-0 object-contain sm:h-10 sm:max-w-[3rem]"
+              />
+            ) : null}
             <span className="font-display text-2xl font-semibold tracking-tight text-foreground sm:text-[1.7rem]">
               {navSystemName}
             </span>
@@ -124,88 +146,70 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {navItems.slice(0, 3).map(({ to, label }) => (
+          <div className="ml-auto flex items-center gap-2">
+            <nav className="hidden items-center gap-1 md:flex">
+              {navItems.slice(0, 3).map(({ to, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={cn('nav-pill', location.pathname === to && 'nav-pill--active')}
+                >
+                  {label}
+                </Link>
+              ))}
               <Link
-                key={to}
-                to={to}
-                className={cn('nav-pill', location.pathname === to && 'nav-pill--active')}
+                to={teamNavTo}
+                className={cn('nav-pill', location.pathname.startsWith('/team') && 'nav-pill--active')}
               >
-                {label}
+                {teamNavLabel}
               </Link>
-            ))}
-            <Link
-              to={teamNavTo}
-              className={cn('nav-pill', location.pathname.startsWith('/team') && 'nav-pill--active')}
-            >
-              {teamNavLabel}
-            </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="ml-1 rounded-full font-grotesk tracking-wide">
-                  Hello，{user?.name}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/guide">主页</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTourOpen(true)}>
-                  新手指引 Guide Tour
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={openChangePw}>
-                  修改密码 Change Password
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => logout()}>
-                  退出登录 Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="ml-1 rounded-full font-grotesk tracking-wide">
+                    Hello，{user?.name}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/guide">主页</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTourOpen(true)}>
+                    新手指引 Guide Tour
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={openChangePw}>
+                    修改密码 Change Password
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => logout()}>
+                    退出登录 Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </nav>
 
-            <div
-              className="ml-2 h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-primary/25 bg-muted/40 shadow-sm"
-              aria-label="学生端 Logo"
-              title="学生端 Logo"
-            >
-              {logoUrl ? (
-                <img src={logoUrl} alt="logo" className="h-full w-full object-cover" />
-              ) : null}
-            </div>
-          </nav>
-
-          <div className="flex items-center gap-2 md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMobileOpen(true)}
-              aria-label="打开菜单"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="font-grotesk">
-                  {user?.name}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/guide">主页</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTourOpen(true)}>新手指引</DropdownMenuItem>
-                <DropdownMenuItem onClick={openChangePw}>修改密码</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => logout()}>退出登录</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <div
-              className="h-9 w-9 shrink-0 overflow-hidden rounded-full border-2 border-primary/25 bg-muted/40"
-              aria-label="学生端 Logo"
-              title="学生端 Logo"
-            >
-              {logoUrl ? (
-                <img src={logoUrl} alt="logo" className="h-full w-full object-cover" />
-              ) : null}
+            <div className="flex items-center gap-2 md:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileOpen(true)}
+                aria-label="打开菜单"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="font-grotesk">
+                    {user?.name}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/guide">主页</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTourOpen(true)}>新手指引</DropdownMenuItem>
+                  <DropdownMenuItem onClick={openChangePw}>修改密码</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => logout()}>退出登录</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -240,10 +244,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         style={
           studentBg
             ? { backgroundColor: studentBg }
-            : {
-                background:
-                  'radial-gradient(52rem 30rem at 110% -10%, rgba(251 191 36 / 0.28), transparent 60%), radial-gradient(46rem 28rem at -15% 8%, rgba(249 115 22 / 0.14), transparent 55%), linear-gradient(to right, rgb(255 251 235), rgba(254 243 199 / 0.8))',
-              }
+            : themeHsl
+              ? { background: buildThemeAmbientBackground(themeHsl) }
+              : {
+                  background:
+                    'radial-gradient(52rem 30rem at 110% -10%, rgba(251 191 36 / 0.28), transparent 60%), radial-gradient(46rem 28rem at -15% 8%, rgba(249 115 22 / 0.14), transparent 55%), linear-gradient(to right, rgb(255 251 235), rgba(254 243 199 / 0.8))',
+                }
         }
       >
         <div className="texture-dots absolute inset-0 opacity-40" aria-hidden />

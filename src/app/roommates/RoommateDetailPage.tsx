@@ -138,7 +138,7 @@ export function RoommateDetailPage() {
               ) : teamStudentCount >= teamMax ? (
                 <span className="font-medium text-red-600">已组队 满员</span>
               ) : (
-                <span className="font-medium text-orange-600">已组队</span>
+                <span className="font-medium text-primary">已组队</span>
               )}
             </span>
             {student.score != null && (
@@ -151,7 +151,7 @@ export function RoommateDetailPage() {
           {traits.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {traits.map((t, i) => (
-                <span key={`${i}-${t}`} className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800">
+                <span key={`${i}-${t}`} className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                   {t}
                 </span>
               ))}

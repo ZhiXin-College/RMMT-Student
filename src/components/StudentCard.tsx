@@ -109,7 +109,7 @@ export function StudentCard({
     <div className={cn('student-card-flip', isDetailsOpen && 'student-card-flip--open')}>
       <div
         className={cn(
-          'card-shell group relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_18px_44px_-18px_rgba(194,94,10,0.35)]',
+          'card-shell group relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_18px_44px_-18px_hsl(var(--primary)/0.35)]',
           cardHeight
         )}
       >
@@ -177,7 +177,7 @@ export function StudentCard({
                     {traits.map((t, i) => (
                       <span
                         key={`${i}-${t}`}
-                        className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-800"
+                        className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
                       >
                         {t}
                       </span>

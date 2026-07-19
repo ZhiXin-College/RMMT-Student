@@ -151,7 +151,7 @@ export function GuidePage() {
               {parseContactToThree(user?.contact ?? '')
                 .filter(Boolean)
                 .map((t, i) => (
-                  <span key={`${i}-${t}`} className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs text-orange-800">
+                  <span key={`${i}-${t}`} className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs text-primary">
                     {t}
                   </span>
                 ))}
