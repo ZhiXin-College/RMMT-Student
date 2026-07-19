@@ -16,13 +16,6 @@ function resolveAssetUrl(url?: string) {
   return `${base}/${url}`
 }
 
-/** PNG/SVG 可作透明底水印；JPG/JPEG 非透明底则不加水印 */
-function isTransparentCapableLogo(url?: string) {
-  if (!url) return false
-  const path = url.split('?')[0].split('#')[0].toLowerCase()
-  return path.endsWith('.png') || path.endsWith('.svg')
-}
-
 type PublicStyle = {
   login_bg_url?: string
   student_logo_url?: string
@@ -81,8 +74,6 @@ export function LoginPage() {
     }
   }
 
-  const showWatermark = Boolean(logoUrl && isTransparentCapableLogo(logoUrl))
-
   return (
     <div
       className={cn(
@@ -93,15 +84,6 @@ export function LoginPage() {
         backgroundImage: `url('${bgUrl || 'https://s2.loli.net/2022/02/01/X5meEt3qr4bKPZB.jpg'}')`,
       }}
     >
-      {showWatermark && (
-        <img
-          src={logoUrl}
-          alt=""
-          aria-hidden
-          className="pointer-events-none absolute bottom-[-6%] left-1/2 z-0 w-[min(92vw,720px)] -translate-x-1/2 select-none object-contain opacity-[0.22]"
-        />
-      )}
-
       <div className="relative z-10 w-full max-w-[420px] rounded-3xl border border-white/30 bg-white/95 p-8 shadow-[0_24px_60px_-24px_rgba(120,60,10,0.45)] backdrop-blur sm:p-10">
         <div className="mb-8 text-center">
           {logoUrl ? (
